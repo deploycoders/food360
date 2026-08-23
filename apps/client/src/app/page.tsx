@@ -1,9 +1,9 @@
 import { log } from "@repo/logger";
-import { Link } from "@repo/ui/link";
-import { CounterButton } from "@repo/ui/counter-button";
+import { Link } from "@food360/ui/link";
+import { CounterButton } from "@food360/ui/counter-button";
 
 export const metadata = {
-  title: "Store | Kitchen Sink",
+  title: "Food360 Client",
 };
 
 export default function Store() {
@@ -12,8 +12,8 @@ export default function Store() {
   return (
     <div className="container">
       <h1 className="title">
-        Store <br />
-        <span>Kitchen Sink</span>
+        Food360 <br />
+        <span>Client</span>
       </h1>
       <CounterButton />
       <p className="description">

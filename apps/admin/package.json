@@ -10,7 +10,9 @@
     "lint": "eslint src/ --max-warnings 0"
   },
   "dependencies": {
-    "@repo/ui": "workspace:*",
+    "@food360/database": "workspace:*",
+    "@food360/types": "workspace:*",
+    "@food360/ui": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

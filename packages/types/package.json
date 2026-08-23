@@ -1,0 +1,28 @@
+{
+  "name": "@food360/types",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "files": [
+    "dist",
+    "index.ts"
+  ],
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "dev": "tsc --project tsconfig.json --watch",
+    "lint": "eslint index.ts",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "eslint": "^9.39.0",
+    "typescript": "5.9.3"
+  }
+}

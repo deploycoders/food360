@@ -1,12 +1,19 @@
-.DS_Store
+# Dependencies (recursivo para monorepos)
 node_modules
-.turbo
-*.log
+**/node_modules
+.pnpm-store
+
+# Next.js & Turborepo Builds
 .next
+**/.next
+.turbo
+
+# Environment & Logs
+.env
+*.local
+*.log
+
+# System & Dist
+.DS_Store
 dist
 dist-ssr
-*.local
-.env
-.cache
-server/dist
-public/dist
