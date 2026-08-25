@@ -17,5 +17,11 @@
   "packageManager": "pnpm@8.15.6",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
+    "framer-motion": "^13.1.1",
+    "sonner": "^2.0.8",
+    "sweetalert2": "^11.26.25"
   }
 }

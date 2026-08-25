@@ -4,26 +4,35 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "vite build",
-    "dev": "vite --host 0.0.0.0 --port 3001 --clearScreen false",
+    "build": "next build",
+    "dev": "next dev -p 3001",
+    "lint": "eslint --max-warnings 0",
     "check-types": "tsc --noEmit",
-    "lint": "eslint src/ --max-warnings 0"
+    "start": "next start -p 3001"
   },
   "dependencies": {
     "@food360/database": "workspace:*",
     "@food360/types": "workspace:*",
+    "@food360/theme": "workspace:*",
     "@food360/ui": "workspace:*",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "@repo/logger": "workspace:*",
+    "lucide-react": "^1.34.0",
+    "next": "16.3.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@next/eslint-plugin-next": "^16.3.0",
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5",
-    "@vitejs/plugin-react": "^4.7.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.15.3",
+    "@types/react": "19.1.0",
+    "@types/react-dom": "19.1.1",
+    "autoprefixer": "^10.5.4",
     "eslint": "^9.39.0",
-    "typescript": "5.9.3",
-    "vite": "^5.4.14"
+    "postcss": "^8.5.26",
+    "tailwindcss": "^4.3.3",
+    "typescript": "5.9.3"
   }
 }

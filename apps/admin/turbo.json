@@ -5,7 +5,9 @@
   "tasks": {
     "build": {
       "outputs": [
-        "dist/**"
+        ".next/**",
+        "!.next/cache/**",
+        "!.next/dev/**"
       ]
     }
   }

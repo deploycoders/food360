@@ -1,0 +1,10 @@
+{
+  "extends": "@repo/typescript-config/react-library.json",
+  "compilerOptions": {
+    "lib": ["dom", "ES2015"],
+    "sourceMap": true,
+    "strictNullChecks": true
+  },
+  "include": [".", "../../apps/admin/src/types/team.ts"],
+  "exclude": ["dist", "build", "node_modules"]
+}

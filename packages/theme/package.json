@@ -1,0 +1,35 @@
+{
+  "name": "@food360/theme",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "style": "./src/globals.css",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "style": "./src/globals.css",
+      "default": "./src/index.ts"
+    },
+    "./globals.css": "./src/globals.css",
+    "./src/*": "./src/*",
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "peerDependencies": {
+    "lucide-react": ">=0.300.0",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/react": ">=18",
+    "eslint": "^9.39.0",
+    "typescript": "5.9.3"
+  }
+}

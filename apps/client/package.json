@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@food360/database": "workspace:*",
+    "@food360/theme": "workspace:*",
     "@food360/types": "workspace:*",
     "@food360/ui": "workspace:*",
     "@repo/logger": "workspace:*",
