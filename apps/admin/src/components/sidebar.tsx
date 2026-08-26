@@ -95,16 +95,16 @@ export function Sidebar() {
             <Link
               href="/kds"
               target="_blank"
-              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg bg-accent/10 hover:bg-accent/20 border border-accent/30 text-accent text-xs font-semibold transition-colors"
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-accent hover:bg-accent/80 text-white text-xs font-semibold shadow-md shadow-accent/20 transition-all active:scale-[0.98]"
             >
               <span className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
                 </span>
                 Pantalla KDS
               </span>
-              <ExternalLink className="w-3.5 h-3.5" />
+              <ExternalLink className="w-3.5 h-3.5 text-white/80" />
             </Link>
           </div>
 
@@ -157,12 +157,14 @@ export function Sidebar() {
 
         {/* Footer */}
         <div className="p-3 border-t border-border">
-          <button className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
-            <span className="flex items-center gap-2 font-medium">
-              <LogOut className="w-4 h-4" />
-              Cerrar Sesión
-            </span>
-          </button>
+          <Link href="/login">
+            <button className="w-full flex items-center cursor-pointer justify-between px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+              <span className="flex items-center gap-2 font-medium">
+                <LogOut className="w-4 h-4" />
+                Cerrar Sesión
+              </span>
+            </button>
+          </Link>
         </div>
       </aside>
     </>

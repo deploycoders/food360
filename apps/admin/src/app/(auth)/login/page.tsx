@@ -1,7 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import { UtensilsCrossed, Lock, Mail, ArrowRight, Eye, EyeOff, ShieldCheck, ChefHat } from "lucide-react";
+import {
+  UtensilsCrossed,
+  Lock,
+  Mail,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  ChefHat,
+} from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("admin@food360.com");
@@ -89,7 +98,11 @@ export default function LoginPage() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
           </div>
@@ -109,7 +122,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-accent text-accent-foreground hover:opacity-95 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-md shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`w-full py-2.5 px-4 text-sm font-semibold ${isLoading ? "cursor-auto" : "cursor-pointer"} rounded-xl bg-accent text-accent-foreground hover:opacity-95 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-md shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {isLoading ? "Validando sesión..." : "Ingresar al Panel"}
             {!isLoading && <ArrowRight className="w-4 h-4" />}
@@ -125,14 +138,14 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => handleQuickLogin("admin@food360.com")}
-              className="px-3 py-2 text-xs font-medium rounded-xl bg-muted hover:bg-muted/80 border border-border text-foreground transition-colors flex items-center justify-center gap-1.5"
+              className="px-3 py-2 text-xs font-medium cursor-pointer rounded-xl bg-muted hover:bg-muted/80 border border-border text-foreground transition-colors flex items-center justify-center gap-1.5"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-accent" /> Admin / CMS
             </button>
             <button
               type="button"
               onClick={() => handleQuickLogin("cocina@food360.com")}
-              className="px-3 py-2 text-xs font-medium rounded-xl bg-muted hover:bg-muted/80 border border-border text-foreground transition-colors flex items-center justify-center gap-1.5"
+              className="px-3 py-2 text-xs font-medium cursor-pointer rounded-xl bg-muted hover:bg-muted/80 border border-border text-foreground transition-colors flex items-center justify-center gap-1.5"
             >
               <ChefHat className="w-3.5 h-3.5 text-accent" /> Chef / KDS
             </button>

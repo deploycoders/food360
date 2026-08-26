@@ -31,7 +31,7 @@ export function SalesChart() {
         </span>
       </div>
 
-      <div className="h-48 flex items-end justify-between gap-2 pt-4 pb-2 border-b border-border">
+      <div className="h-48 flex items-end justify-between gap-2 pt-4 pb-1.5 border-b border-border">
         {chartData.map((bar) => (
           <div
             key={bar.hour}

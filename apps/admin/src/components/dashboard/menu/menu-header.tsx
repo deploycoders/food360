@@ -10,13 +10,10 @@ interface MenuHeaderProps {
 
 export function MenuHeader({ onOpenNewDishModal }: MenuHeaderProps) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-border">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5">
       <div>
         <div className="flex items-center gap-2.5">
-          <div className="p-2 bg-accent/10 border border-accent/20 rounded-xl text-accent shadow-sm">
-            <UtensilsCrossed className="w-5 h-5" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Gestión de Carta y Menú
           </h1>
         </div>

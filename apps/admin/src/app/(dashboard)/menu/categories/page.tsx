@@ -96,7 +96,7 @@ export default function CategoriesPage() {
 
   const toggleCategoryStatus = (id: string) => {
     setCategories((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, isActive: !c.isActive } : c))
+      prev.map((c) => (c.id === id ? { ...c, isActive: !c.isActive } : c)),
     );
   };
 
@@ -134,17 +134,12 @@ export default function CategoriesPage() {
       {/* Top Breadcrumb & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <Link
-            href="/menu"
-            className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline mb-1 font-medium"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Volver a la Carta
-          </Link>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+          <h1 className="text-3xl sm:text-3xl font-bold tracking-tight text-foreground">
             Categorías del Menú
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Organiza las secciones del menú visibles en la carta digital y en el KDS de cocina.
+            Organiza las secciones del menú visibles en la carta digital y en el
+            KDS de cocina.
           </p>
         </div>
 
@@ -167,7 +162,9 @@ export default function CategoriesPage() {
               <th className="px-4 py-3.5 font-semibold">Orden</th>
               <th className="px-4 py-3.5 font-semibold">Nombre de Categoría</th>
               <th className="px-4 py-3.5 font-semibold">Descripción</th>
-              <th className="px-4 py-3.5 font-semibold">Platillos Vinculados</th>
+              <th className="px-4 py-3.5 font-semibold">
+                Platillos Vinculados
+              </th>
               <th className="px-4 py-3.5 font-semibold">Estado</th>
               <th className="px-4 py-3.5 font-semibold text-right">Acciones</th>
             </tr>
@@ -182,7 +179,9 @@ export default function CategoriesPage() {
                   #{index + 1}
                 </td>
                 <td className="px-4 py-3.5">
-                  <span className="font-bold text-foreground block text-sm">{cat.name}</span>
+                  <span className="font-bold text-foreground block text-sm">
+                    {cat.name}
+                  </span>
                   <span className="text-[10px] text-muted-foreground font-mono">
                     /{cat.slug}
                   </span>
@@ -211,7 +210,9 @@ export default function CategoriesPage() {
                         }`}
                       />
                     </button>
-                    <span className={`text-xs font-semibold ${cat.isActive ? "text-success" : "text-muted-foreground"}`}>
+                    <span
+                      className={`text-xs font-semibold ${cat.isActive ? "text-success" : "text-muted-foreground"}`}
+                    >
                       {cat.isActive ? "Activa" : "Oculta"}
                     </span>
                   </div>
@@ -247,7 +248,9 @@ export default function CategoriesPage() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-card border border-border w-full max-w-md rounded-2xl shadow-2xl p-6 transition-all">
             <div className="flex justify-between items-center mb-5">
-              <h2 className="text-lg font-bold text-foreground">Nueva Categoría</h2>
+              <h2 className="text-lg font-bold text-foreground">
+                Nueva Categoría
+              </h2>
               <button
                 type="button"
                 onClick={() => setShowModal(false)}

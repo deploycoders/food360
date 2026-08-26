@@ -87,7 +87,7 @@ export function Header({ onToggleSidebar }: HeaderProps) {
           )}
         </button>
 
-        <div className="h-4 w-[1px] bg-border mx-1 hidden sm:block" />
+        <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
 
         {/* Perfil de Usuario */}
         <div className="relative">
@@ -123,9 +123,7 @@ export function Header({ onToggleSidebar }: HeaderProps) {
               />
               <div className="absolute right-0 mt-2 w-52 bg-card border border-border rounded-2xl shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
                 <div className="px-3.5 py-2 border-b border-border md:hidden">
-                  <p className="text-xs font-semibold text-foreground">
-                    Admin
-                  </p>
+                  <p className="text-xs font-semibold text-foreground">Admin</p>
                   <p className="text-[10px] text-muted-foreground">
                     admin@food360.com
                   </p>
@@ -149,16 +147,17 @@ export function Header({ onToggleSidebar }: HeaderProps) {
                   <span>Configuración</span>
                 </Link>
 
-                <div className="h-[1px] bg-border my-1" />
-
-                <button
-                  type="button"
-                  onClick={() => setIsProfileOpen(false)}
-                  className="w-full px-3.5 py-2 text-xs text-destructive hover:bg-destructive/10 flex items-center gap-2.5 transition-colors"
-                >
-                  <LogOut className="w-3.5 h-3.5 text-destructive" />
-                  <span>Cerrar Sesión</span>
-                </button>
+                <div className="h-px bg-border my-1" />
+                <Link href="/login">
+                  <button
+                    type="button"
+                    onClick={() => setIsProfileOpen(false)}
+                    className="w-full px-3.5 py-2 text-xs text-destructive hover:bg-destructive/10 flex items-center gap-2.5 transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-destructive" />
+                    <span>Cerrar Sesión</span>
+                  </button>
+                </Link>
               </div>
             </>
           )}

@@ -1,17 +1,15 @@
 "use client";
 
-import { showTimedToast } from "@/app/lib/swal";
-import { AIIntegrationsTab } from "@/components/dashboard/settings/ai-integration-tab";
-import { ProfileSettingsTab } from "@/components/dashboard/settings/profile-settings-tab";
-import { QRGeneratorTab } from "@/components/dashboard/settings/qr-generator-tab";
-import { ScheduleSettingsTab } from "@/components/dashboard/settings/schedule-settings-tab";
-import {
-  SettingsTabs,
-  SettingsTabType,
-} from "@/components/dashboard/settings/settings-tabs";
-import { BusinessProfile, DaySchedule } from "@/types/settings";
 import React, { useState } from "react";
+import { SettingsHeader } from "./settings-header";
+import { SettingsTabs, SettingsTabType } from "./settings-tabs";
+import { ProfileSettingsTab } from "./profile-settings-tab";
+import { ScheduleSettingsTab } from "./schedule-settings-tab";
+import { QRTablesSettingsTab } from "./qr-tables-settings-tab";
+import { BusinessProfile, DaySchedule, QRSettings } from "@/types/settings";
+import { showTimedToast } from "@/app/lib/swal";
 
+// Datos iniciales de demostración
 const initialProfile: BusinessProfile = {
   name: "Food360 Grill & Bar",
   legalName: "Food360 Hospitality S.L.",
@@ -75,51 +73,50 @@ const initialSchedules: DaySchedule[] = [
   },
 ];
 
-export default function ConfigurationPage() {
+const initialQR: QRSettings = {
+  tableCount: 24,
+  allowSelfOrdering: true,
+  requireTableNumber: true,
+  serviceTaxPercentage: 10,
+  wifiName: "Food360_Clientes",
+  wifiPassword: "grillandbarwifi",
+};
+
+export function SettingsView() {
   const [activeTab, setActiveTab] = useState<SettingsTabType>("profile");
+  const [isSaving, setIsSaving] = useState(false);
+
   const [profile, setProfile] = useState<BusinessProfile>(initialProfile);
   const [schedules, setSchedules] = useState<DaySchedule[]>(initialSchedules);
+  const [qrSettings, setQrSettings] = useState<QRSettings>(initialQR);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setIsSaving(true);
+
+    // Simulación de guardado API
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    setIsSaving(false);
     showTimedToast("Ajustes guardados correctamente", "success");
   };
 
   return (
-    <div className="space-y-6 mx-auto">
-      {/* Cabecera */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">
-            Configuración del Restaurante
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Ajustes generales, menú QR, agentes de inteligencia artificial y
-            operación del local.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={handleSave}
-          className="px-4 py-2 bg-accent text-accent-foreground text-xs font-semibold rounded-xl hover:opacity-90 transition-all cursor-pointer shadow-xs"
-        >
-          Guardar Ajustes
-        </button>
-      </div>
+    <div className="space-y-6 w-full">
+      <SettingsHeader isSaving={isSaving} onSave={handleSave} />
 
-      {/* Navegación de pestañas */}
       <SettingsTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* Secciones con sus props requeridas */}
       <div className="pt-2">
         {activeTab === "profile" && (
           <ProfileSettingsTab data={profile} onChange={setProfile} />
         )}
-        {activeTab === "qr" && (
-          <QRGeneratorTab tableCount={24} baseUrl="https://food360.app" />
-        )}
-        {activeTab === "ai" && <AIIntegrationsTab />}
+
         {activeTab === "schedule" && (
           <ScheduleSettingsTab schedules={schedules} onChange={setSchedules} />
+        )}
+
+        {activeTab === "qr" && (
+          <QRTablesSettingsTab data={qrSettings} onChange={setQrSettings} />
         )}
       </div>
     </div>

@@ -1,5 +1,8 @@
 import Swal from "sweetalert2";
 import { toast } from "sonner";
+import { AlertTriangle, CheckCircle2, Info, XCircle } from "lucide-react";
+
+export type ToastType = "success" | "info" | "warning" | "error";
 
 // Modal elegante para acciones críticas (desactivar, borrar, etc.)
 const Food360Swal = Swal.mixin({
@@ -33,14 +36,51 @@ export const confirmDeactivateMember = async (
   return result.isConfirmed;
 };
 
-// Toasts limpios con Sonner
 export const showTimedToast = (
   title: string,
-  icon: "success" | "info" = "success",
+  type: ToastType = "success",
+  description?: string,
 ) => {
-  if (icon === "success") {
-    toast.success(title);
-  } else {
-    toast.info(title);
+  const toastOptions = {
+    description,
+    style: {
+      background: "var(--card)",
+      color: "var(--foreground)",
+      borderColor: "var(--border)",
+      borderRadius: "14px",
+      fontSize: "13px",
+      fontWeight: "500",
+      boxShadow: "0 10px 30px -5px rgba(0, 0, 0, 0.08)",
+    },
+  };
+
+  switch (type) {
+    case "success":
+      toast.success(title, {
+        ...toastOptions,
+        icon: <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />,
+      });
+      break;
+
+    case "info":
+      toast.info(title, {
+        ...toastOptions,
+        icon: <Info className="h-4 w-4 text-accent shrink-0" />,
+      });
+      break;
+
+    case "warning":
+      toast.warning(title, {
+        ...toastOptions,
+        icon: <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />,
+      });
+      break;
+
+    case "error":
+      toast.error(title, {
+        ...toastOptions,
+        icon: <XCircle className="h-4 w-4 text-rose-500 shrink-0" />,
+      });
+      break;
   }
 };

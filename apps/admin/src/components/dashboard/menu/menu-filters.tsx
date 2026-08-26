@@ -19,7 +19,7 @@ export function MenuFilters({
   onSearchChange,
 }: MenuFiltersProps) {
   return (
-    <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+    <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pb-1.5 border-b border-border">
       {/* Buscador de Platillos */}
       <div className="relative w-full md:w-80">
         <Search className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />

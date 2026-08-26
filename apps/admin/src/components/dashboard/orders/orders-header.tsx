@@ -11,13 +11,10 @@ interface OrdersHeaderProps {
 
 export function OrdersHeader({ totalOrders, onExportCSV }: OrdersHeaderProps) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 ">
       <div>
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-accent/10 border border-accent/20 rounded-lg text-accent">
-            <ShoppingBag className="w-5 h-5" />
-          </div>
-          <h1 className="text-xl font-bold text-foreground">
+          <h1 className="text-3xl font-bold text-foreground">
             Historial y Gestión de Pedidos
           </h1>
         </div>

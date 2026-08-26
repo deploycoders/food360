@@ -36,7 +36,7 @@ export function OrdersFilters({
   return (
     <div className="space-y-4">
       {/* Pestañas de Estado */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-border scrollbar-none">
+      <div className="flex items-center gap-1 overflow-x-auto pb-1.5 border-b border-border scrollbar-none">
         {TABS.map((tab) => {
           const count = statusCounts[tab.id] || 0;
           const isActive = selectedStatus === tab.id;
@@ -46,7 +46,7 @@ export function OrdersFilters({
               key={tab.id}
               type="button"
               onClick={() => onStatusChange(tab.id)}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
+              className={`px-3 py-2 rounded-lg cursor-pointer text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
                 isActive
                   ? "bg-accent/15 text-accent border border-accent/30"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -76,7 +76,7 @@ export function OrdersFilters({
             placeholder="Buscar por # comanda, cliente..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full bg-card border border-border rounded-lg pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent transition-colors"
+            className="w-full bg-card border border-border rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition-all"
           />
         </div>
 
