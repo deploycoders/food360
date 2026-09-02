@@ -28,7 +28,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.76.1"
+    "@supabase/supabase-js": "^2.112.4"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",

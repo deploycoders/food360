@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
-import { useTheme } from "./theme-provider";
+import { useTheme } from "./theme-context";
 
 export function ThemeToggle() {
   const { setTheme, resolvedTheme } = useTheme();
+
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export function ThemeToggle() {
               : "-rotate-90 scale-0 opacity-0"
           }`}
         />
+
         <Moon
           className={`w-4 h-4 absolute inset-0 transition-all duration-500 ease-out transform ${
             isDark

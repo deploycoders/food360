@@ -3,19 +3,19 @@
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
-  "style": "./src/globals.css",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
   "sideEffects": [
     "**/*.css"
   ],
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "style": "./src/globals.css",
+      "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./globals.css": "./src/globals.css",
-    "./src/*": "./src/*",
-    "./*": "./src/*"
+    "./globals.css": "./src/globals.css"
   },
   "scripts": {
     "check-types": "tsc --noEmit",
@@ -23,7 +23,8 @@
   },
   "peerDependencies": {
     "lucide-react": ">=0.300.0",
-    "react": ">=18"
+    "react": ">=18",
+    "react-dom": ">=18"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",

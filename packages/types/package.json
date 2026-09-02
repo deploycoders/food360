@@ -3,20 +3,16 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
-  "files": [
-    "dist",
-    "index.ts"
-  ],
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts"
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
     }
   },
   "scripts": {
-    "build": "tsc --project tsconfig.json",
-    "dev": "tsc --project tsconfig.json --watch",
-    "lint": "eslint index.ts",
+    "lint": "eslint src/**/*.ts",
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {

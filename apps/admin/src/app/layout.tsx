@@ -1,4 +1,6 @@
 import { ThemeProvider } from "@food360/theme";
+import { AuthProvider } from "@/context/AuthContext";
+import { RestaurantProvider } from "@/context/RestaurantContext";
 import "@food360/theme/globals.css";
 import { Toaster } from "sonner";
 
@@ -7,8 +9,6 @@ export const metadata = {
   description: "Panel de administración",
 };
 
-const themeScript = `(function(){try{var t=localStorage.getItem("food360-theme")||"light";var d=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d)}catch(e){}})();`;
-
 export default function RootLayout({
   children,
 }: {
@@ -16,26 +16,28 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body className="bg-background text-foreground antialiased transition-colors duration-200">
         <ThemeProvider>
-          {children}
-          <Toaster
-            position="top-right"
-            duration={3000}
-            toastOptions={{
-              style: {
-                background: "var(--card)",
-                color: "var(--foreground)",
-                borderColor: "var(--border)",
-                borderRadius: "14px",
-                fontSize: "13px",
-                boxShadow: "0 10px 30px -5px rgba(0, 0, 0, 0.12)",
-              },
-            }}
-          />
+          <AuthProvider>
+            <RestaurantProvider>
+              {children}
+
+              <Toaster
+                position="top-right"
+                duration={3000}
+                toastOptions={{
+                  style: {
+                    background: "var(--card)",
+                    color: "var(--foreground)",
+                    borderColor: "var(--border)",
+                    borderRadius: "14px",
+                    fontSize: "13px",
+                    boxShadow: "0 10px 30px -5px rgba(0, 0, 0, 0.12)",
+                  },
+                }}
+              />
+            </RestaurantProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

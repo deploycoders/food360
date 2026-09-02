@@ -18,6 +18,7 @@
     "@food360/database": "workspace:*",
     "@food360/types": "workspace:*",
     "@repo/logger": "workspace:*",
+    "@supabase/supabase-js": "^2.112.4",
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",

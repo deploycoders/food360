@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Dish } from "@/types/menu";
+import { Category, Dish } from "@/types/menu";
 import { X, Box, Image as ImageIcon } from "lucide-react";
 
 interface DishModalProps {
   isOpen: boolean;
   dishToEdit: Dish | null;
-  categories: string[];
+  categories: Category[];
   onClose: () => void;
   onSave: (dishData: Partial<Dish>) => void;
 }
@@ -21,28 +21,38 @@ export function DishModal({
 }: DishModalProps) {
   const [formData, setFormData] = useState<Partial<Dish>>({
     name: "",
-    category: categories[1] || "Hamburguesas",
+    categoryId: "",
     price: 10,
     prepTimeMinutes: 15,
     description: "",
-    isAvailable: true,
+    isActive: true,
+    isOutOfStock: false,
     imageUrl: "",
-    model3dUrl: "",
+    is3d: false,
+    glbUrl: "",
+    usdzUrl: "",
   });
 
   useEffect(() => {
+    if (!isOpen) return;
+
     if (dishToEdit) {
-      setFormData(dishToEdit);
+      setFormData({
+        ...dishToEdit,
+      });
     } else {
       setFormData({
         name: "",
-        category: categories[1] || "Hamburguesas",
+        categoryId: categories[0]?.id || "",
         price: 10,
         prepTimeMinutes: 15,
         description: "",
-        isAvailable: true,
+        isActive: true,
+        isOutOfStock: false,
         imageUrl: "",
-        model3dUrl: "",
+        is3d: false,
+        glbUrl: "",
+        usdzUrl: "",
       });
     }
   }, [dishToEdit, categories, isOpen]);
@@ -51,6 +61,7 @@ export function DishModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     onSave(formData);
   };
 
@@ -62,6 +73,7 @@ export function DishModal({
           <h2 className="text-base font-bold text-foreground">
             {dishToEdit ? "Editar Platillo" : "Crear Nuevo Platillo"}
           </h2>
+
           <button
             type="button"
             onClick={onClose}
@@ -73,57 +85,78 @@ export function DishModal({
 
         {/* Formulario */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
+          {/* Nombre */}
           <div>
             <label className="block font-semibold text-foreground mb-1">
               Nombre del Platillo
             </label>
+
             <input
               type="text"
               required
               value={formData.name || ""}
               onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
+                setFormData({
+                  ...formData,
+                  name: e.target.value,
+                })
               }
               placeholder="Ej: Hamburguesa Trufada Angus"
               className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-accent transition-colors placeholder:text-muted-foreground/60"
             />
           </div>
 
+          {/* Categoría + Precio */}
           <div className="grid grid-cols-2 gap-3">
+            {/* Categoría */}
             <div>
               <label className="block font-semibold text-foreground mb-1">
                 Categoría
               </label>
+
               <select
-                value={formData.category || categories[1]}
+                required
+                value={formData.categoryId || ""}
                 onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
+                  setFormData({
+                    ...formData,
+                    categoryId: e.target.value,
+                  })
                 }
                 className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-accent transition-colors"
               >
-                {categories
-                  .filter((c) => c !== "Todos")
-                  .map((cat) => (
-                    <option key={cat} value={cat} className="bg-card text-foreground">
-                      {cat}
+                {categories.length === 0 ? (
+                  <option value="">No hay categorías</option>
+                ) : (
+                  categories.map((category) => (
+                    <option
+                      key={category.id}
+                      value={category.id}
+                      className="bg-card text-foreground"
+                    >
+                      {category.name}
                     </option>
-                  ))}
+                  ))
+                )}
               </select>
             </div>
 
+            {/* Precio */}
             <div>
               <label className="block font-semibold text-foreground mb-1">
                 Precio ($)
               </label>
+
               <input
                 type="number"
                 step="0.01"
+                min="0"
                 required
-                value={formData.price || 0}
+                value={formData.price ?? 0}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    price: parseFloat(e.target.value),
+                    price: Number(e.target.value),
                   })
                 }
                 className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-accent font-mono transition-colors"
@@ -131,75 +164,135 @@ export function DishModal({
             </div>
           </div>
 
+          {/* Tiempo */}
           <div>
             <label className="block font-semibold text-foreground mb-1">
-              Tiempo estimado de prep. (Minutos)
+              Tiempo estimado de preparación (Minutos)
             </label>
+
             <input
               type="number"
+              min="0"
               required
-              value={formData.prepTimeMinutes || 0}
+              value={formData.prepTimeMinutes ?? 0}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  prepTimeMinutes: parseInt(e.target.value),
+                  prepTimeMinutes: Number(e.target.value),
                 })
               }
               className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-accent font-mono transition-colors"
             />
           </div>
 
+          {/* Descripción */}
           <div>
             <label className="block font-semibold text-foreground mb-1">
               Descripción
             </label>
+
             <textarea
               rows={3}
               value={formData.description || ""}
               onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
+                setFormData({
+                  ...formData,
+                  description: e.target.value,
+                })
               }
               placeholder="Ingredientes principales, preparación, alérgenos..."
               className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-accent resize-none transition-colors placeholder:text-muted-foreground/60"
             />
           </div>
 
-          {/* URLs de Imagen y Modelo 3D */}
-          <div className="p-3 bg-muted/30 border border-border rounded-xl space-y-3">
-            <div>
-              <label className="text-muted-foreground mb-1 flex items-center gap-1 font-medium">
-                <ImageIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                <span>URL de Imagen Principal</span>
-              </label>
-              <input
-                type="url"
-                value={formData.imageUrl || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, imageUrl: e.target.value })
-                }
-                placeholder="https://..."
-                className="w-full bg-card border border-border rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-accent transition-colors placeholder:text-muted-foreground/60"
-              />
-            </div>
+          {/* Imagen */}
+          <div>
+            <label className="text-muted-foreground mb-1 flex items-center gap-1 font-medium">
+              <ImageIcon className="w-3.5 h-3.5" />
+              <span>URL de Imagen Principal</span>
+            </label>
 
-            <div>
-              <label className="text-muted-foreground mb-1 flex items-center gap-1 font-medium">
-                <Box className="w-3.5 h-3.5 text-accent" />
-                <span>URL de Modelo 3D (.glb / .gltf)</span>
-              </label>
-              <input
-                type="url"
-                value={formData.model3dUrl || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, model3dUrl: e.target.value })
-                }
-                placeholder="https://.../modelo.glb"
-                className="w-full bg-card border border-border rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-accent font-mono transition-colors placeholder:text-muted-foreground/60"
-              />
-            </div>
+            <input
+              type="url"
+              value={formData.imageUrl || ""}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  imageUrl: e.target.value,
+                })
+              }
+              placeholder="https://..."
+              className="w-full bg-card border border-border rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-accent transition-colors placeholder:text-muted-foreground/60"
+            />
           </div>
 
-          {/* Footer Buttons */}
+          {/* Modelos 3D */}
+          <div className="p-3 bg-muted/30 border border-border rounded-xl space-y-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.is3d ?? false}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    is3d: e.target.checked,
+                  })
+                }
+              />
+
+              <span className="font-medium text-foreground">
+                Este platillo tiene modelo 3D
+              </span>
+            </label>
+
+            {formData.is3d && (
+              <>
+                {/* GLB */}
+                <div>
+                  <label className="text-muted-foreground mb-1 flex items-center gap-1 font-medium">
+                    <Box className="w-3.5 h-3.5 text-accent" />
+                    <span>Modelo 3D (.glb)</span>
+                  </label>
+
+                  <input
+                    type="url"
+                    value={formData.glbUrl || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        glbUrl: e.target.value,
+                      })
+                    }
+                    placeholder="https://.../modelo.glb"
+                    className="w-full bg-card border border-border rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-accent font-mono transition-colors"
+                  />
+                </div>
+
+                {/* USDZ */}
+                <div>
+                  <label className="text-muted-foreground mb-1 flex items-center gap-1 font-medium">
+                    <Box className="w-3.5 h-3.5 text-accent" />
+                    <span>Modelo AR para iPhone (.usdz)</span>
+                  </label>
+
+                  <input
+                    type="url"
+                    value={formData.usdzUrl || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        usdzUrl: e.target.value,
+                      })
+                    }
+                    placeholder="https://.../modelo.usdz"
+                    className="w-full bg-card border border-border rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-accent font-mono transition-colors"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Footer */}
           <div className="pt-3 border-t border-border flex items-center justify-end gap-2">
             <button
               type="button"
@@ -208,9 +301,11 @@ export function DishModal({
             >
               Cancelar
             </button>
+
             <button
               type="submit"
-              className="px-4 py-2 bg-accent hover:opacity-95 text-accent-foreground rounded-xl font-semibold shadow-md shadow-accent/20 transition-all"
+              disabled={categories.length === 0}
+              className="px-4 py-2 bg-accent hover:opacity-95 disabled:opacity-50 text-accent-foreground rounded-xl font-semibold shadow-md shadow-accent/20 transition-all"
             >
               Guardar Cambios
             </button>

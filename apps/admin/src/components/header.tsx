@@ -13,8 +13,8 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@food360/theme";
 import Link from "next/link";
+import { useLogout } from "@/lib/hooks/useLogout";
 
-// Mapa de rutas a títulos y categorías (Breadcrumb)
 const ROUTE_MAP: Record<string, { title: string; category?: string }> = {
   "/": { title: "Dashboard", category: "Principal" },
   "/orders": { title: "Órdenes & Comandas", category: "Principal" },
@@ -35,15 +35,21 @@ export function Header({ onToggleSidebar }: HeaderProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [unreadNotifications] = useState(2);
 
-  // Detecta automáticamente la sección según la URL actual
   const currentSection = ROUTE_MAP[pathname] || {
     title: "Panel CMS",
     category: "Food360",
   };
 
+  const { logout } = useLogout();
+
+  const handleLogout = async () => {
+    setIsProfileOpen(false);
+    await logout();
+  };
+
   return (
     <header className="h-16 border-b border-border bg-card/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40 transition-colors">
-      {/* Izquierda: Toggle Móvil/Tablet & Título Dinámico (Breadcrumb) */}
+      {/* Izquierda: Breadcrumb Dinámico */}
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -54,7 +60,6 @@ export function Header({ onToggleSidebar }: HeaderProps) {
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Muestra la sección y subsección según la ruta */}
         <div className="flex items-center gap-2">
           {currentSection.category && (
             <>
@@ -70,12 +75,10 @@ export function Header({ onToggleSidebar }: HeaderProps) {
         </div>
       </div>
 
-      {/* Derecha: Utilidades (Tema, Notificaciones, Perfil) */}
+      {/* Derecha: Tema, Notificaciones y Perfil */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Switch Modo Oscuro / Claro */}
         <ThemeToggle />
 
-        {/* Notificaciones */}
         <button
           type="button"
           className="relative p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted border border-transparent hover:border-border transition-all duration-200 active:scale-95"
@@ -89,7 +92,6 @@ export function Header({ onToggleSidebar }: HeaderProps) {
 
         <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
 
-        {/* Perfil de Usuario */}
         <div className="relative">
           <button
             type="button"
@@ -114,7 +116,6 @@ export function Header({ onToggleSidebar }: HeaderProps) {
             />
           </button>
 
-          {/* Menú Desplegable */}
           {isProfileOpen && (
             <>
               <div
@@ -148,16 +149,15 @@ export function Header({ onToggleSidebar }: HeaderProps) {
                 </Link>
 
                 <div className="h-px bg-border my-1" />
-                <Link href="/login">
-                  <button
-                    type="button"
-                    onClick={() => setIsProfileOpen(false)}
-                    className="w-full px-3.5 py-2 text-xs text-destructive hover:bg-destructive/10 flex items-center gap-2.5 transition-colors"
-                  >
-                    <LogOut className="w-3.5 h-3.5 text-destructive" />
-                    <span>Cerrar Sesión</span>
-                  </button>
-                </Link>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full px-3.5 py-2 text-xs text-destructive hover:bg-destructive/10 flex items-center gap-2.5 transition-colors text-left"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-destructive" />
+                  <span>Cerrar Sesión</span>
+                </button>
               </div>
             </>
           )}
