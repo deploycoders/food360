@@ -17,8 +17,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, Permission[]> = {
 
     "categories.manage",
 
-    "stock.view",
-    "stock.manage",
+    "disponibility.view",
+    "disponibility.manage",
 
     "tables.view",
     "tables.manage",
@@ -58,8 +58,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, Permission[]> = {
 
     "categories.manage",
 
-    "stock.view",
-    "stock.manage",
+    "disponibility.view",
+    "disponibility.manage",
 
     "tables.view",
     "tables.manage",
@@ -109,5 +109,11 @@ export const ROLE_PERMISSIONS: Record<AppRole, Permission[]> = {
     "reservations.manage",
   ],
 
-  chef: ["orders.view", "kds.view", "kds.manage", "menu.view", "stock.view"],
+  chef: [
+    "orders.view",
+    "kds.view",
+    "kds.manage",
+    "menu.view",
+    "disponibility.view",
+  ],
 };

@@ -36,6 +36,34 @@ export const confirmDeactivateMember = async (
   return result.isConfirmed;
 };
 
+export const confirmLogout = async (): Promise<boolean> => {
+  const result = await Food360Swal.fire({
+    title: "¿Cerrar sesión?",
+    text: "¿Estás seguro de que deseas cerrar sesión? Se te redirigirá a la página de inicio de sesión.",
+    icon: "warning",
+    iconColor: "var(--warning)",
+    showCancelButton: true,
+    confirmButtonText: "Sí, cerrar sesión",
+    cancelButtonText: "Cancelar",
+  });
+
+  return result.isConfirmed;
+};
+
+export const confirmDeleteCategory = async (name: string): Promise<boolean> => {
+  const result = await Food360Swal.fire({
+    title: "¿Eliminar categoría?",
+    text: `"${name}" será eliminada permanentemente. Si tiene platillos asociados, la base de datos podría impedir la eliminación.`,
+    icon: "warning",
+    iconColor: "var(--warning)",
+    showCancelButton: true,
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar",
+  });
+
+  return result.isConfirmed;
+};
+
 export const showTimedToast = (
   title: string,
   type: ToastType = "success",

@@ -7,7 +7,7 @@ export const ROUTE_PERMISSIONS: Record<string, Permission> = {
 
   "/menu": "menu.view",
   "/menu/categories": "categories.manage",
-  "/menu/stock": "stock.view",
+  "/menu/disponibility": "disponibility.view",
 
   "/team": "team.view",
 

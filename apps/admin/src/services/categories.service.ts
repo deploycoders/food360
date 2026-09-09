@@ -23,18 +23,13 @@ function mapCategory(row: CategoryRow): Category {
   };
 }
 
-/**
- * Obtiene todas las categorías visibles para el usuario actual.
- *
- * RLS se encarga de devolver únicamente las categorías
- * del restaurante al que pertenece el usuario.
- */
-export async function getCategories(): Promise<Category[]> {
+export async function getCategories(restaurantId: string): Promise<Category[]> {
   const supabase = createClient();
 
   const { data, error } = await supabase
     .from("categories")
     .select("*")
+    .eq("restaurant_id", restaurantId)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
 
@@ -46,15 +41,15 @@ export async function getCategories(): Promise<Category[]> {
   return ((data ?? []) as CategoryRow[]).map(mapCategory);
 }
 
-/**
- * Obtiene únicamente las categorías activas.
- */
-export async function getActiveCategories(): Promise<Category[]> {
+export async function getActiveCategories(
+  restaurantId: string,
+): Promise<Category[]> {
   const supabase = createClient();
 
   const { data, error } = await supabase
     .from("categories")
     .select("*")
+    .eq("restaurant_id", restaurantId)
     .eq("is_active", true)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
@@ -67,14 +62,6 @@ export async function getActiveCategories(): Promise<Category[]> {
   return ((data ?? []) as CategoryRow[]).map(mapCategory);
 }
 
-/**
- * Crear una nueva categoría.
- *
- * restaurant_id se envía explícitamente porque es necesario
- * saber a qué restaurante pertenece el nuevo registro.
- *
- * RLS valida que el usuario tenga permisos sobre ese restaurante.
- */
 export async function createCategory(
   restaurantId: string,
   category: {
@@ -103,9 +90,6 @@ export async function createCategory(
   return mapCategory(data as CategoryRow);
 }
 
-/**
- * Actualizar una categoría.
- */
 export async function updateCategory(
   categoryId: string,
   updates: {
@@ -145,14 +129,23 @@ export async function updateCategory(
   return mapCategory(data as CategoryRow);
 }
 
-/**
- * Activa o desactiva una categoría.
- */
 export async function toggleCategoryStatus(
   categoryId: string,
   isActive: boolean,
 ): Promise<Category> {
-  return updateCategory(categoryId, {
-    isActive,
-  });
+  return updateCategory(categoryId, { isActive });
+}
+
+export async function deleteCategory(categoryId: string): Promise<void> {
+  const supabase = createClient();
+
+  const { error } = await supabase
+    .from("categories")
+    .delete()
+    .eq("id", categoryId);
+
+  if (error) {
+    console.error("Error eliminando categoría:", error);
+    throw new Error(error.message);
+  }
 }

@@ -73,9 +73,9 @@ const navigation: NavSection[] = [
       },
       {
         label: "Control de Stock",
-        href: "/menu/stock",
+        href: "/menu/disponibility",
         icon: Boxes,
-        permission: "stock.view",
+        permission: "disponibility.view",
       },
     ],
   },

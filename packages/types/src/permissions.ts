@@ -13,8 +13,8 @@ export const PERMISSIONS = [
 
   "categories.manage",
 
-  "stock.view",
-  "stock.manage",
+  "disponibility.view",
+  "disponibility.manage",
 
   "tables.view",
   "tables.manage",

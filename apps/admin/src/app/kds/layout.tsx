@@ -10,13 +10,25 @@ import {
   Minimize2,
   Clock,
   ArrowLeft,
+  LogOut,
 } from "lucide-react";
+import { useLogout } from "@/lib/hooks/useLogout";
+import { confirmLogout } from "../lib/swal";
 
 export default function KDSLayout({ children }: { children: React.ReactNode }) {
   const [currentTime, setCurrentTime] = useState("");
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const station = "Cocina General & Brasas";
+  const { logout } = useLogout();
+
+  const handleLogout = async () => {
+    const confirmed = await confirmLogout();
+
+    if (!confirmed) return;
+
+    await logout();
+  };
 
   useEffect(() => {
     const updateTime = () => {
@@ -68,7 +80,7 @@ export default function KDSLayout({ children }: { children: React.ReactNode }) {
               <span className="font-extrabold text-xs sm:text-sm tracking-wide text-foreground uppercase block leading-none">
                 KDS Cocina
               </span>
-              <span className="text-[10px] sm:text-[11px] text-accent font-medium truncate max-w-[120px] sm:max-w-none block mt-0.5">
+              <span className="text-[10px] sm:text-[11px] text-accent font-medium truncate max-w-30 sm:max-w-none block mt-0.5">
                 {station}
               </span>
             </div>
@@ -125,6 +137,17 @@ export default function KDSLayout({ children }: { children: React.ReactNode }) {
             <Clock className="w-3.5 h-3.5 text-accent shrink-0" />
             <span>{currentTime || "00:00:00"}</span>
           </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="p-2 sm:px-3 sm:py-1.5 cursor-pointer rounded-lg border border-destructive/20 bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors flex items-center gap-1.5"
+            title="Cerrar sesión"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden md:inline text-xs font-semibold">
+              Salir
+            </span>
+          </button>
         </div>
       </header>
 

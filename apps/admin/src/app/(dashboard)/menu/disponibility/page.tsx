@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { StockItem, StockFilterType } from "@/types/stock";
-import { StockHeader } from "@/components/dashboard/menu/stock/StockHeader";
-import { StockFilters } from "@/components/dashboard/menu/stock/StockFilters";
-import { StockCard } from "@/components/dashboard/menu/stock/StockCard";
+import { StockItem, StockFilterType } from "@/types/disponibility";
+import { StockHeader } from "@/components/dashboard/menu/disponibility/StockHeader";
+import { StockFilters } from "@/components/dashboard/menu/disponibility/StockFilters";
+import { StockCard } from "@/components/dashboard/menu/disponibility/StockCard";
 
 const INITIAL_ITEMS: StockItem[] = [
   {
@@ -65,7 +65,7 @@ const INITIAL_ITEMS: StockItem[] = [
   },
 ];
 
-export default function StockControlPage() {
+export default function DisponibilityControlPage() {
   const [items, setItems] = useState<StockItem[]>(INITIAL_ITEMS);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<StockFilterType>("all");

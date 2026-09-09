@@ -20,7 +20,10 @@ const ROUTE_MAP: Record<string, { title: string; category?: string }> = {
   "/orders": { title: "Órdenes & Comandas", category: "Principal" },
   "/menu": { title: "Platillos & Carta", category: "Gestión de Menú" },
   "/menu/categories": { title: "Categorías", category: "Gestión de Menú" },
-  "/menu/stock": { title: "Control de Stock", category: "Gestión de Menú" },
+  "/menu/disponibility": {
+    title: "Control de Stock",
+    category: "Gestión de Menú",
+  },
   "/team": { title: "Personal & Equipo", category: "Administración" },
   "/settings": { title: "Configuración", category: "Administración" },
   "/kds": { title: "Pantalla KDS", category: "Cocina" },

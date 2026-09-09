@@ -25,7 +25,7 @@ export function MenuHeader({ onOpenNewDishModal }: MenuHeaderProps) {
 
       <div className="flex items-center gap-2.5">
         <Link
-          href="/menu/stock"
+          href="/menu/disponibility"
           className="px-3.5 py-2.5 rounded-xl bg-muted hover:bg-muted/80 border border-border text-foreground text-xs font-medium flex items-center gap-2 transition-all duration-200 active:scale-95"
         >
           <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
