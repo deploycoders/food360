@@ -28,16 +28,12 @@ export interface Product {
 
   isActive: boolean;
   isOutOfStock: boolean;
+  deactivationReason: string | null;
 
   createdAt?: string;
   updatedAt?: string;
 }
 
-/**
- * Tipo preparado específicamente para la UI del menú.
- *
- * Combina Product + nombre de la categoría.
- */
 export interface Dish {
   id: string;
 
@@ -58,13 +54,7 @@ export interface Dish {
 
   isActive: boolean;
   isOutOfStock: boolean;
+  deactivationReason?: string;
 
-  /**
-   * Estado calculado para la interfaz.
-   *
-   * Un producto está disponible si:
-   * - Está activo
-   * - No está agotado
-   */
   isAvailable: boolean;
 }

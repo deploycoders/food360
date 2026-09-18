@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -14,14 +14,17 @@ import {
   ExternalLink,
   LogOut,
   Flame,
-  Menu,
   X,
 } from "lucide-react";
+
 import { hasPermission, type AppRole, type Permission } from "@food360/types";
+
 import { useLogout } from "@/lib/hooks/useLogout";
 
 interface SidebarProps {
   userRole?: AppRole;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 interface NavItem {
@@ -72,7 +75,7 @@ const navigation: NavSection[] = [
         permission: "categories.manage",
       },
       {
-        label: "Control de Stock",
+        label: "Disponibilidad",
         href: "/menu/disponibility",
         icon: Boxes,
         permission: "disponibility.view",
@@ -98,14 +101,9 @@ const navigation: NavSection[] = [
   },
 ];
 
-export function Sidebar({ userRole = "admin" }: SidebarProps) {
+export function Sidebar({ userRole = "admin", isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
   const { logout } = useLogout();
-
-  const handleLogout = async () => {
-    await logout();
-  };
 
   const filteredNavigation = navigation
     .map((section) => ({
@@ -118,77 +116,100 @@ export function Sidebar({ userRole = "admin" }: SidebarProps) {
 
   const canAccessKDS = hasPermission(userRole, "kds.view");
 
+  const handleLogout = async () => {
+    onClose();
+    await logout();
+  };
+
   return (
     <>
-      {/* Botón Flotante Hamburguesa (Solo en Pantallas Pequeñas) */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        aria-label="Abrir menú"
-        className="lg:hidden fixed bottom-5 right-5 z-50 p-3.5 rounded-full bg-accent text-accent-foreground shadow-xl shadow-accent/30 border border-accent/40 active:scale-95 transition-transform"
-      >
-        {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
-
-      {/* Overlay Oscuro para Cerrar en Móvil */}
-      {isOpen && (
-        <div
-          onClick={() => setIsOpen(false)}
-          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
-        />
-      )}
-
-      {/* Sidebar Container */}
-      <aside
-        className={`fixed lg:sticky top-0 left-0 z-40 w-64 bg-card border-r border-border flex flex-col justify-between shrink-0 h-screen transition-all duration-300 ${
-          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+      {/* Overlay móvil */}
+      <div
+        className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-all duration-300 lg:hidden ${
+          isOpen
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0"
         }`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed left-0 top-0 z-50
+          flex h-screen w-64 shrink-0 flex-col
+          border-r border-border bg-card
+          transition-transform duration-300 ease-out
+
+          lg:sticky lg:z-30
+          lg:translate-x-0
+
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+        `}
+        aria-label="Navegación principal"
       >
-        <div>
-          {/* Header Sidebar */}
-          <div className="p-5 flex items-center justify-between border-b border-border">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-accent/10 border border-accent/20 text-accent">
-                <Flame className="w-5 h-5 fill-accent/20" />
-              </div>
+        {/* Header Sidebar */}
+        <div className="flex items-center justify-between border-b border-border p-5">
+          <Link
+            href="/"
+            onClick={onClose}
+            className="flex items-center gap-2.5"
+          >
+            <div className="rounded-xl border border-accent/20 bg-accent/10 p-2 text-accent">
+              <Flame className="h-5 w-5 fill-accent/20" />
+            </div>
 
-              <div>
-                <span className="font-bold text-lg text-foreground block leading-none">
-                  Food<span className="text-accent">360</span>
-                </span>
+            <div>
+              <span className="block text-lg font-bold leading-none text-foreground">
+                Food<span className="text-accent">360</span>
+              </span>
 
-                <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
-                  Panel CMS
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Panel CMS
+              </span>
+            </div>
+          </Link>
+
+          {/* Cerrar sidebar en móvil */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
+            aria-label="Cerrar menú"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Quick Action: KDS */}
+        {canAccessKDS && (
+          <div className="p-3">
+            <Link
+              href="/kds"
+              target="_blank"
+              onClick={onClose}
+              className="flex w-full items-center justify-between rounded-md bg-accent px-3.5 py-2.5 text-xs font-semibold text-white shadow-md shadow-accent/20 transition-all hover:bg-accent/80 active:scale-[0.98]"
+            >
+              <span className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
                 </span>
-              </div>
+                Pantalla KDS
+              </span>
+
+              <ExternalLink className="h-3.5 w-3.5 text-white/80" />
             </Link>
           </div>
+        )}
 
-          {/* Quick Action: KDS */}
-          {canAccessKDS && (
-            <div className="p-3">
-              <Link
-                href="/kds"
-                target="_blank"
-                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-md bg-accent hover:bg-accent/80 text-white text-xs font-semibold shadow-md shadow-accent/20 transition-all active:scale-[0.98]"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
-                  </span>
-                  Pantalla KDS
-                </span>
-
-                <ExternalLink className="w-3.5 h-3.5 text-white/80" />
-              </Link>
-            </div>
-          )}
-
-          {/* Links Nav */}
-          <nav className="p-3 space-y-6 overflow-y-auto max-h-[calc(100vh-220px)]">
+        {/* Navegación */}
+        <nav className="flex-1 overflow-y-auto p-3">
+          <div className="space-y-6">
             {filteredNavigation.map((section) => (
               <div key={section.title} className="space-y-1">
-                <h3 className="px-3 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
+                <h3 className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   {section.title}
                 </h3>
 
@@ -206,25 +227,37 @@ export function Sidebar({ userRole = "admin" }: SidebarProps) {
                       <Link
                         key={item.href}
                         href={item.href}
-                        onClick={() => setIsOpen(false)}
-                        className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                          isActive
-                            ? "bg-muted text-accent font-semibold border border-border"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                        }`}
+                        onClick={onClose}
+                        className={`
+                          flex items-center justify-between
+                          rounded-lg px-3 py-2
+                          text-xs font-medium
+                          transition-colors
+
+                          ${
+                            isActive
+                              ? "border border-border bg-muted font-semibold text-accent"
+                              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                          }
+                        `}
                       >
                         <div className="flex items-center gap-2.5">
                           <Icon
-                            className={`w-4 h-4 ${
-                              isActive ? "text-accent" : "text-muted-foreground"
-                            }`}
+                            className={`
+                              h-4 w-4
+                              ${
+                                isActive
+                                  ? "text-accent"
+                                  : "text-muted-foreground"
+                              }
+                            `}
                           />
 
                           <span>{item.label}</span>
                         </div>
 
-                        {item.badge && (
-                          <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-accent/15 text-accent border border-accent/25">
+                        {item.badge !== undefined && (
+                          <span className="rounded-full border border-accent/25 bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
                             {item.badge}
                           </span>
                         )}
@@ -234,17 +267,18 @@ export function Sidebar({ userRole = "admin" }: SidebarProps) {
                 </div>
               </div>
             ))}
-          </nav>
-        </div>
+          </div>
+        </nav>
 
         {/* Footer */}
-        <div className="py-4 px-3 border-t border-border">
+        <div className="border-t border-border px-3 py-4">
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full cursor-pointer px-3.5 py-2.5 rounded-lg text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors flex items-center gap-2.5"
+            className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
           >
-            <LogOut className="w-4 h-4 text-destructive" />
+            <LogOut className="h-4 w-4 text-destructive" />
+
             <span>Cerrar Sesión</span>
           </button>
         </div>

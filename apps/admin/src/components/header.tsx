@@ -21,7 +21,7 @@ const ROUTE_MAP: Record<string, { title: string; category?: string }> = {
   "/menu": { title: "Platillos & Carta", category: "Gestión de Menú" },
   "/menu/categories": { title: "Categorías", category: "Gestión de Menú" },
   "/menu/disponibility": {
-    title: "Control de Stock",
+    title: "Disponibilidad",
     category: "Gestión de Menú",
   },
   "/team": { title: "Personal & Equipo", category: "Administración" },
@@ -30,10 +30,11 @@ const ROUTE_MAP: Record<string, { title: string; category?: string }> = {
 };
 
 interface HeaderProps {
+  isSidebarOpen: boolean;
   onToggleSidebar?: () => void;
 }
 
-export function Header({ onToggleSidebar }: HeaderProps) {
+export function Header({ isSidebarOpen, onToggleSidebar }: HeaderProps) {
   const pathname = usePathname();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [unreadNotifications] = useState(2);
@@ -51,7 +52,13 @@ export function Header({ onToggleSidebar }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 border-b border-border bg-card/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40 transition-colors">
+    <header
+      className={`h-16 border-b border-border bg-card/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40 transition-all duration-300 ${
+        isSidebarOpen
+          ? "pointer-events-none -translate-y-full opacity-0"
+          : "translate-y-0 opacity-100"
+      }`}
+    >
       {/* Izquierda: Breadcrumb Dinámico */}
       <div className="flex items-center gap-3">
         <button

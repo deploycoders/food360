@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import { StockItem } from "@/types/stock";
+import { DisponibilityItem } from "@/types/disponibility";
 import { Clock } from "lucide-react";
 
 interface StockCardProps {
-  item: StockItem;
+  item: DisponibilityItem;
   onToggle: (id: string) => void;
 }
 
