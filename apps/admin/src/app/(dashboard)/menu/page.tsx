@@ -14,7 +14,7 @@ import { MenuProducts } from "@/components/dashboard/menu/menu-products";
 import { DishModal } from "@/components/dashboard/menu/dish-modal/dish-modal";
 
 import { confirmDesactivateProduct } from "@/app/lib/swal";
-import { useMenuViewMode } from "@/hooks/use-menu-view-mode";
+import { useMenuViewMode } from "@/lib/hooks/use-menu-view-mode";
 import { mapProductsToDishes } from "@/components/dashboard/menu/menu-mapper";
 
 export default function MenuPage() {

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { TeamMember } from "@/types/team";
+import type { TeamMember } from "@/types/team";
 import {
   X,
   Mail,
@@ -9,7 +9,6 @@ import {
   Calendar,
   Clock,
   ShieldCheck,
-  Activity,
   UserX,
   UserCheck,
   Monitor,
@@ -47,38 +46,44 @@ export function TeamProfileDrawer({
         className="relative z-10 flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-3xl sm:rounded-2xl border border-border bg-card shadow-xl transition-all animate-in slide-in-from-bottom-4 sm:max-h-[85vh] sm:w-125 sm:zoom-in-95"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Banner de Portada (Si existe) o Header de Acciones (Si no existe) */}
+        {/* Banner de Portada */}
         {hasCover ? (
           <div className="relative h-28 w-full bg-muted overflow-hidden">
             <img
-              src={member.coverUrl}
+              src={member.coverUrl ?? undefined}
               alt="Cover"
               className="h-full w-full object-cover"
             />
+
             <div className="absolute inset-0 bg-linear-to-b from-black/50 via-transparent to-transparent" />
 
             {/* Acciones flotantes sobre la portada */}
             <div className="absolute top-3 left-0 right-0 flex items-center justify-between px-4 z-10">
-              <button
-                onClick={() => onToggleStatus && onToggleStatus(member.id)}
-                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium backdrop-blur-md transition-all cursor-pointer ${
-                  member.isActive
-                    ? "bg-black/40 text-red-300 hover:bg-black/60"
-                    : "bg-black/40 text-emerald-300 hover:bg-black/60"
-                }`}
-              >
-                {member.isActive ? (
-                  <>
-                    <UserX className="h-3.5 w-3.5" />
-                    <span>Desactivar</span>
-                  </>
-                ) : (
-                  <>
-                    <UserCheck className="h-3.5 w-3.5" />
-                    <span>Activar</span>
-                  </>
-                )}
-              </button>
+              {/* No mostrar acciones para propietario */}
+              {member.role !== "owner" ? (
+                <button
+                  onClick={() => onToggleStatus && onToggleStatus(member.id)}
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium backdrop-blur-md transition-all cursor-pointer ${
+                    member.isActive
+                      ? "bg-black/40 text-red-300 hover:bg-black/60"
+                      : "bg-black/40 text-emerald-300 hover:bg-black/60"
+                  }`}
+                >
+                  {member.isActive ? (
+                    <>
+                      <UserX className="h-3.5 w-3.5" />
+                      <span>Desactivar</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck className="h-3.5 w-3.5" />
+                      <span>Activar</span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <div />
+              )}
 
               <button
                 onClick={onClose}
@@ -90,26 +95,31 @@ export function TeamProfileDrawer({
           </div>
         ) : (
           <div className="flex items-center justify-between border-b border-border/50 px-5 py-3.5 bg-muted/20">
-            <button
-              onClick={() => onToggleStatus && onToggleStatus(member.id)}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
-                member.isActive
-                  ? "text-destructive hover:bg-destructive/10"
-                  : "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
-              }`}
-            >
-              {member.isActive ? (
-                <>
-                  <UserX className="h-3.5 w-3.5" />
-                  <span>Desactivar cuenta</span>
-                </>
-              ) : (
-                <>
-                  <UserCheck className="h-3.5 w-3.5" />
-                  <span>Activar cuenta</span>
-                </>
-              )}
-            </button>
+            {/* No mostrar acciones para propietario */}
+            {member.role !== "owner" ? (
+              <button
+                onClick={() => onToggleStatus && onToggleStatus(member.id)}
+                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
+                  member.isActive
+                    ? "text-destructive hover:bg-destructive/10"
+                    : "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                }`}
+              >
+                {member.isActive ? (
+                  <>
+                    <UserX className="h-3.5 w-3.5" />
+                    <span>Desactivar cuenta</span>
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="h-3.5 w-3.5" />
+                    <span>Activar cuenta</span>
+                  </>
+                )}
+              </button>
+            ) : (
+              <div />
+            )}
 
             <button
               onClick={onClose}
@@ -122,13 +132,15 @@ export function TeamProfileDrawer({
 
         {/* Perfil Header */}
         <div
-          className={`flex flex-col items-center px-6 pb-4 ${hasCover ? "-mt-10" : "pt-6"}`}
+          className={`flex flex-col items-center px-6 pb-4 ${
+            hasCover ? "-mt-10" : "pt-6"
+          }`}
         >
           <div className="relative">
             <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-card bg-muted shadow-md">
               {member.avatarUrl ? (
                 <img
-                  src={member.avatarUrl}
+                  src={member.avatarUrl ?? undefined}
                   alt={member.name}
                   className="h-full w-full object-cover"
                 />
@@ -138,6 +150,7 @@ export function TeamProfileDrawer({
                 </span>
               )}
             </div>
+
             <span
               className={`absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card ${
                 member.isActive ? "bg-emerald-500" : "bg-muted-foreground/40"
@@ -154,6 +167,7 @@ export function TeamProfileDrawer({
               <ShieldCheck className="h-3 w-3 text-accent" />
               {member.role}
             </span>
+
             <span
               className={`text-xs font-medium ${
                 member.isActive
@@ -178,6 +192,7 @@ export function TeamProfileDrawer({
           >
             Detalles
           </button>
+
           <button
             onClick={() => setActiveTab("logs")}
             className={`ml-6 flex items-center gap-2 border-b-2 py-2.5 text-xs font-semibold transition-colors cursor-pointer ${
@@ -204,6 +219,7 @@ export function TeamProfileDrawer({
                   <Mail className="h-4 w-4 text-muted-foreground/70" />
                   Correo electrónico
                 </span>
+
                 <span className="font-medium text-foreground truncate max-w-55">
                   {member.email}
                 </span>
@@ -214,6 +230,7 @@ export function TeamProfileDrawer({
                   <Phone className="h-4 w-4 text-muted-foreground/70" />
                   Teléfono
                 </span>
+
                 <span className="font-medium text-foreground">
                   {member.phone || "No registrado"}
                 </span>
@@ -224,6 +241,7 @@ export function TeamProfileDrawer({
                   <Calendar className="h-4 w-4 text-muted-foreground/70" />
                   Fecha de alta
                 </span>
+
                 <span className="font-medium text-foreground">
                   {member.createdAt}
                 </span>
@@ -234,6 +252,7 @@ export function TeamProfileDrawer({
                   <Clock className="h-4 w-4 text-muted-foreground/70" />
                   Última actividad
                 </span>
+
                 <span className="font-medium text-foreground">
                   {member.lastConnection}
                 </span>
@@ -245,6 +264,7 @@ export function TeamProfileDrawer({
                     <Monitor className="h-4 w-4 text-muted-foreground/70" />
                     Acceso KDS
                   </span>
+
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${
                       member.isKdsActive
@@ -259,6 +279,7 @@ export function TeamProfileDrawer({
                           : "bg-muted-foreground"
                       }`}
                     />
+
                     {member.isKdsActive ? "Habilitado" : "Deshabilitado"}
                   </span>
                 </div>
@@ -275,17 +296,21 @@ export function TeamProfileDrawer({
                   {member.activityLogs.map((log) => (
                     <div key={log.id} className="relative pl-5">
                       <span className="absolute -left-1.25 top-1.5 h-2 w-2 rounded-full border border-card bg-accent" />
+
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold text-foreground">
                           {log.action}
                         </span>
+
                         <span className="text-[10px] text-muted-foreground">
                           {log.timestamp}
                         </span>
                       </div>
+
                       <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
                         {log.details}
                       </p>
+
                       <span className="mt-1 inline-block text-[9px] font-semibold tracking-wide uppercase text-muted-foreground">
                         {log.module}
                       </span>

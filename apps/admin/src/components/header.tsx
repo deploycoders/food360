@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@food360/theme";
 import Link from "next/link";
-import { useLogout } from "@/lib/hooks/useLogout";
+import { useLogout } from "@/lib/hooks/use-logout";
 
 const ROUTE_MAP: Record<string, { title: string; category?: string }> = {
   "/": { title: "Dashboard", category: "Principal" },

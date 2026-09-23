@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { X, Save, Plus } from "lucide-react";
 import type { Dish, Category } from "@/types/menu";
 
-import { useProductForm } from "@/hooks/use-product-form";
+import { useProductForm } from "@/lib/hooks/use-product-form";
 import type { ProductFormValues } from "@/schemas/product.schema";
 import { DishBasicFields } from "./dish-basic-fields";
 import { DishPricingFields } from "./dish-pricing-fields";

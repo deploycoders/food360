@@ -48,9 +48,17 @@ export async function proxy(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
-  const isPublicRoute = path === "/login";
+  const isLoginRoute = path === "/login";
+  const isForgotPasswordRoute = path === "/forgot-password";
+  const isResetPasswordRoute = path === "/reset-password";
 
-  // 1. Usuario NO autenticado
+  const isPublicRoute =
+    isLoginRoute || isForgotPasswordRoute || isResetPasswordRoute;
+
+  // =========================================================
+  // 1. USUARIO NO AUTENTICADO
+  // =========================================================
+
   if (!user && !isPublicRoute) {
     const redirectUrl = new URL("/login", request.url);
 
@@ -61,29 +69,80 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // 2. Usuario autenticado
+  // =========================================================
+  // 2. USUARIO AUTENTICADO
+  // =========================================================
+
   if (user) {
     const { data: membership, error: membershipError } = await supabase
       .from("restaurant_members")
-      .select("role, restaurant_id")
+      .select("role, restaurant_id, is_active")
       .eq("user_id", user.id)
       .limit(1)
       .maybeSingle();
 
+    // -------------------------------------------------------
+    // Sin membresía
+    // -------------------------------------------------------
+
     if (membershipError || !membership) {
       console.error("User has no restaurant membership:", membershipError);
+
+      if (isLoginRoute) {
+        return response;
+      }
 
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
     const role = membership.role as AppRole;
 
-    // Usuario autenticado intentando entrar al login
-    if (isPublicRoute) {
+    // -------------------------------------------------------
+    // CUENTA DESACTIVADA
+    // -------------------------------------------------------
+
+    if (!membership.is_active) {
+      /*
+       * Importante:
+       *
+       * No redirigimos a /login si YA estamos en /login.
+       * De lo contrario:
+       *
+       * /login
+       *   ↓
+       * usuario autenticado
+       *   ↓
+       * is_active = false
+       *   ↓
+       * /login
+       *   ↓
+       * LOOP
+       */
+
+      if (isLoginRoute) {
+        return response;
+      }
+
+      const redirectUrl = new URL("/login", request.url);
+
+      redirectUrl.searchParams.set("error", "account_disabled");
+
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // -------------------------------------------------------
+    // USUARIO ACTIVO EN /LOGIN
+    // -------------------------------------------------------
+
+    if (isLoginRoute) {
       return NextResponse.redirect(
         new URL(ROLE_DEFAULT_REDIRECT[role], request.url),
       );
     }
+
+    // -------------------------------------------------------
+    // PERMISOS DE RUTA
+    // -------------------------------------------------------
 
     const requiredPermission: Permission | undefined = ROUTE_PERMISSIONS[path];
 

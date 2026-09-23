@@ -1,30 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  Mail,
-  Phone,
-  UserX,
-  UserCheck,
-  Calendar,
-  Clock,
-  Eye,
-} from "lucide-react";
-import { TeamMember, TeamRole } from "@/types/team";
+import React, { useEffect, useState } from "react";
+import { Mail, Phone, UserX, UserCheck, Clock, Eye } from "lucide-react";
+import type { TeamMember, TeamRole } from "@/types/team";
+import { TEAM_ROLE_LABELS } from "@/types/team";
 import { confirmDeactivateMember, showTimedToast } from "@/app/lib/swal";
+import { isUserOnline, formatLastSeen } from "@/lib/hooks/team-clock";
 
 interface TeamCardsProps {
   members: TeamMember[];
-  onToggleStatus: (id: string) => void;
+  onToggleStatus: (id: string) => void | Promise<void>;
   onSelectMember: (member: TeamMember) => void;
 }
 
 const ROLE_BADGES: Record<TeamRole, string> = {
-  Propietario: "bg-accent/10 text-accent border-accent/20",
-  "Jefe de Cocina": "bg-warning/10 text-warning border-warning/20",
-  Gerente: "bg-foreground/10 text-foreground border-border",
-  "Mesero / Sala": "bg-muted text-muted-foreground border-border",
-  "Caja / POS": "bg-success/10 text-success border-success/20",
+  owner: "bg-accent/10 text-accent border-accent/20",
+  chef: "bg-warning/10 text-warning border-warning/20",
+  admin: "bg-foreground/10 text-foreground border-border",
+  waiter: "bg-muted text-muted-foreground border-border",
+  cashier: "bg-success/10 text-success border-success/20",
 };
 
 export function TeamCards({
@@ -52,22 +46,43 @@ function MemberCard({
   onSelectMember,
 }: {
   member: TeamMember;
-  onToggleStatus: (id: string) => void;
+  onToggleStatus: (id: string) => void | Promise<void>;
   onSelectMember: (member: TeamMember) => void;
 }) {
   const [imgError, setImgError] = useState(false);
 
+  // Fuerza una actualización periódica para recalcular
+  // "En línea" / "Última vez hace X..."
+  const [, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 30_000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
+  const online = isUserOnline(member.lastSeenAt);
+
   const handleDeactivate = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
     if (!member.isActive) {
-      onToggleStatus(member.id);
+      await onToggleStatus(member.id);
+
       showTimedToast(`Acceso reactivado para ${member.name}`);
+
       return;
     }
 
     const confirmed = await confirmDeactivateMember(member.name);
+
     if (confirmed) {
-      onToggleStatus(member.id);
+      await onToggleStatus(member.id);
+
       showTimedToast(`Cuenta desactivada correctamente`, "info");
     }
   };
@@ -92,9 +107,10 @@ function MemberCard({
                 {member.name.slice(0, 2).toUpperCase()}
               </div>
             )}
+
             <span
               className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-card ${
-                member.isActive ? "bg-success" : "bg-muted-foreground"
+                online ? "bg-success" : "bg-muted-foreground"
               }`}
             />
           </div>
@@ -111,7 +127,8 @@ function MemberCard({
             >
               <Eye className="w-4 h-4" />
             </button>
-            {member.role !== "Propietario" && (
+
+            {member.role !== "owner" && (
               <button
                 type="button"
                 onClick={handleDeactivate}
@@ -137,12 +154,13 @@ function MemberCard({
         <h3 className="font-bold text-base text-foreground tracking-tight leading-snug">
           {member.name}
         </h3>
+
         <span
           className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-semibold border mt-1.5 ${
             ROLE_BADGES[member.role]
           }`}
         >
-          {member.role}
+          {TEAM_ROLE_LABELS[member.role]}
         </span>
 
         <div className="space-y-2 py-3 my-3 border-y border-border/60 text-xs">
@@ -150,9 +168,10 @@ function MemberCard({
             <Mail className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">{member.email}</span>
           </div>
+
           <div className="flex items-center gap-2 text-muted-foreground">
             <Phone className="w-3.5 h-3.5 shrink-0" />
-            <span>{member.phone}</span>
+            <span>{member.phone || "Teléfono no registrado"}</span>
           </div>
         </div>
       </div>
@@ -160,8 +179,12 @@ function MemberCard({
       <div className="flex items-center justify-between text-[11px]">
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <Clock className="w-3.5 h-3.5" />
-          <span>{member.lastConnection}</span>
+
+          <span className={online ? "text-success font-semibold" : undefined}>
+            {formatLastSeen(member.lastSeenAt)}
+          </span>
         </div>
+
         <span
           className={`font-semibold ${
             member.isActive ? "text-success" : "text-muted-foreground"

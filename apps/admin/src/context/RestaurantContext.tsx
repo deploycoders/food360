@@ -54,8 +54,6 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     const currentUser = user;
 
     async function loadRestaurantContext() {
-      setLoading(true);
-
       const supabase = createClient();
 
       const { data, error } = await supabase
@@ -74,10 +72,12 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error("Error loading restaurant context:", error);
+
         setRestaurants([]);
         setCurrentRestaurant(null);
         setRole(null);
         setLoading(false);
+
         return;
       }
 
@@ -103,27 +103,31 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
 
       const firstMembership = memberships[0];
 
-      if (firstMembership) {
-        const restaurant = Array.isArray(firstMembership.restaurants)
-          ? firstMembership.restaurants[0]
-          : firstMembership.restaurants;
-
-        if (restaurant) {
-          setCurrentRestaurant({
-            id: restaurant.id,
-            name: restaurant.name,
-            slug: restaurant.slug,
-          });
-
-          setRole(firstMembership.role as AppRole);
-        } else {
-          setCurrentRestaurant(null);
-          setRole(null);
-        }
-      } else {
+      if (!firstMembership) {
         setCurrentRestaurant(null);
         setRole(null);
+        setLoading(false);
+        return;
       }
+
+      const restaurant = Array.isArray(firstMembership.restaurants)
+        ? firstMembership.restaurants[0]
+        : firstMembership.restaurants;
+
+      if (!restaurant) {
+        setCurrentRestaurant(null);
+        setRole(null);
+        setLoading(false);
+        return;
+      }
+
+      setCurrentRestaurant({
+        id: restaurant.id,
+        name: restaurant.name,
+        slug: restaurant.slug,
+      });
+
+      setRole(firstMembership.role as AppRole);
 
       setLoading(false);
     }

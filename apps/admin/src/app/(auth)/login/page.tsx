@@ -62,7 +62,7 @@ export default function LoginPage() {
     if (data?.user) {
       const { data: membership, error: membershipError } = await supabase
         .from("restaurant_members")
-        .select("role")
+        .select("role, is_active")
         .eq("user_id", data.user.id)
         .limit(1)
         .maybeSingle();
@@ -75,6 +75,18 @@ export default function LoginPage() {
 
         setIsLoading(false);
         setErrorMessage("Tu usuario no está asociado a ningún restaurante.");
+
+        return;
+      }
+
+      if (!membership.is_active) {
+        await supabase.auth.signOut();
+
+        setIsLoading(false);
+        setErrorMessage(
+          "Tu cuenta está desactivada. Contacta al administrador del restaurante.",
+        );
+
         return;
       }
 
@@ -153,16 +165,13 @@ export default function LoginPage() {
               <label className="text-xs font-semibold text-foreground">
                 Contraseña
               </label>
-              <a
-                href="#forgot"
+              <button
+                type="button"
+                onClick={() => router.push("/forgot-password")}
                 className="text-xs text-accent hover:underline"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert("Por favor contacta al administrador del sistema.");
-                }}
               >
                 ¿Olvidaste tu clave?
-              </a>
+              </button>
             </div>
             <div className="relative">
               <Lock className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />

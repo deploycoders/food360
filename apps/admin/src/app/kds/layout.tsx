@@ -12,7 +12,7 @@ import {
   ArrowLeft,
   LogOut,
 } from "lucide-react";
-import { useLogout } from "@/lib/hooks/useLogout";
+import { useLogout } from "@/lib/hooks/use-logout";
 import { confirmLogout } from "../lib/swal";
 
 export default function KDSLayout({ children }: { children: React.ReactNode }) {

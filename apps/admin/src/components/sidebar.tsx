@@ -19,7 +19,7 @@ import {
 
 import { hasPermission, type AppRole, type Permission } from "@food360/types";
 
-import { useLogout } from "@/lib/hooks/useLogout";
+import { useLogout } from "@/lib/hooks/use-logout";
 
 interface SidebarProps {
   userRole?: AppRole;
