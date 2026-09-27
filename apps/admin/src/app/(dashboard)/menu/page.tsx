@@ -12,7 +12,8 @@ import { MenuHeader } from "@/components/dashboard/menu/menu-header";
 import { MenuFilters } from "@/components/dashboard/menu/menu-filters";
 import { MenuProducts } from "@/components/dashboard/menu/menu-products";
 import { DishModal } from "@/components/dashboard/menu/dish-modal/dish-modal";
-
+import { useRestaurant } from "@/context/RestaurantContext";
+import { hasPermission, type AppRole } from "@food360/types";
 import { confirmDesactivateProduct } from "@/app/lib/swal";
 import { useMenuViewMode } from "@/lib/hooks/use-menu-view-mode";
 import { mapProductsToDishes } from "@/components/dashboard/menu/menu-mapper";
@@ -36,6 +37,15 @@ export default function MenuPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
+
+  const { role } = useRestaurant();
+
+  const userRole = role as AppRole;
+
+  const canCreateMenu = hasPermission(userRole, "menu.create");
+  const canEditMenu = hasPermission(userRole, "menu.update");
+  const canDeleteMenu = hasPermission(userRole, "menu.delete");
+  const canManageMenuAvailability = hasPermission(userRole, "menu.update");
 
   /*
    * ProductsContext es la fuente de verdad.
@@ -209,7 +219,10 @@ export default function MenuPage() {
 
   return (
     <div className="mx-auto space-y-6">
-      <MenuHeader onOpenNewDishModal={handleOpenNewDish} />
+      <MenuHeader
+        onOpenNewDishModal={handleOpenNewDish}
+        canCreate={canCreateMenu}
+      />
 
       <MenuFilters
         categories={categories}
@@ -234,6 +247,9 @@ export default function MenuPage() {
           onEdit={handleEditDish}
           onDelete={handleDeleteDish}
           onToggleAvailability={handleToggleAvailability}
+          canEdit={canEditMenu}
+          canDelete={canDeleteMenu}
+          canManageAvailability={canManageMenuAvailability}
         />
       )}
 

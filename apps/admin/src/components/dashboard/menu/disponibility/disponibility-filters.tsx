@@ -39,6 +39,8 @@ interface StockFiltersProps {
 
   onEnableAll: () => void;
   onDisableAll: () => void;
+
+  canManage: boolean;
 }
 
 export function StockFilters({
@@ -52,6 +54,7 @@ export function StockFilters({
   counts,
   onEnableAll,
   onDisableAll,
+  canManage,
 }: StockFiltersProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -107,25 +110,30 @@ export function StockFilters({
 
         {/* Actions */}
         <div className="grid grid-cols-2 gap-2 lg:flex lg:items-center">
-          {/* Enable all */}
-          <button
-            type="button"
-            onClick={onEnableAll}
-            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-card px-3.5 text-xs font-semibold text-foreground transition-all duration-200 hover:border-emerald-500/30 hover:bg-emerald-500/5 hover:text-foreground active:scale-[0.98]"
-          >
-            <CheckCheck className="h-4 w-4 text-emerald-500" />
-            <span>Activar todos</span>
-          </button>
+          {/* Enable / Disable all */}
+          {canManage && (
+            <>
+              <button
+                type="button"
+                onClick={onEnableAll}
+                className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-card px-3.5 text-xs font-semibold text-foreground transition-all duration-200 hover:border-emerald-500/30 hover:bg-emerald-500/5 hover:text-foreground active:scale-[0.98]"
+              >
+                <CheckCheck className="h-4 w-4 text-emerald-500" />
 
-          {/* Disable all */}
-          <button
-            type="button"
-            onClick={onDisableAll}
-            className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-card px-3.5 text-xs font-semibold text-foreground transition-all duration-200 hover:border-destructive/30 hover:bg-destructive/5 hover:text-foreground active:scale-[0.98]"
-          >
-            <PauseCircle className="h-4 w-4 text-muted-foreground" />
-            <span>Agotar todos</span>
-          </button>
+                <span>Activar todos</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onDisableAll}
+                className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-card px-3.5 text-xs font-semibold text-foreground transition-all duration-200 hover:border-destructive/30 hover:bg-destructive/5 hover:text-foreground active:scale-[0.98]"
+              >
+                <PauseCircle className="h-4 w-4 text-muted-foreground" />
+
+                <span>Agotar todos</span>
+              </button>
+            </>
+          )}
 
           {/* Filters */}
           <button
@@ -282,6 +290,7 @@ function FilterChip({ active, onClick, children, icon }: FilterChipProps) {
       }`}
     >
       {icon}
+
       {children}
     </button>
   );

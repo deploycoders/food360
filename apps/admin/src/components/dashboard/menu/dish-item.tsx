@@ -9,6 +9,10 @@ interface DishListItemProps {
   onEdit: (dish: Dish) => void;
   onDelete: (dishId: string) => void;
   onToggleAvailability: (dishId: string) => void;
+
+  canEdit: boolean;
+  canDelete: boolean;
+  canManageAvailability: boolean;
 }
 
 export function DishListItem({
@@ -16,6 +20,9 @@ export function DishListItem({
   onEdit,
   onDelete,
   onToggleAvailability,
+  canEdit,
+  canDelete,
+  canManageAvailability,
 }: DishListItemProps) {
   return (
     <motion.div
@@ -78,43 +85,66 @@ export function DishListItem({
       </div>
 
       {/* Estado */}
-      <button
-        type="button"
-        onClick={() => onToggleAvailability(dish.id)}
-        className={`hidden cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-semibold sm:block ${
-          !dish.isActive
-            ? "border-border bg-muted text-muted-foreground"
+      {canManageAvailability ? (
+        <button
+          type="button"
+          onClick={() => onToggleAvailability(dish.id)}
+          className={`hidden cursor-pointer rounded-full border px-2.5 py-1 text-[10px] font-semibold sm:block ${
+            !dish.isActive
+              ? "border-border bg-muted text-muted-foreground"
+              : dish.isOutOfStock
+                ? "border-destructive/20 bg-destructive/10 text-destructive"
+                : "border-success/20 bg-success/10 text-success"
+          }`}
+        >
+          {!dish.isActive
+            ? "Desactivado"
             : dish.isOutOfStock
-              ? "border-destructive/20 bg-destructive/10 text-destructive"
-              : "border-success/20 bg-success/10 text-success"
-        }`}
-      >
-        {!dish.isActive
-          ? "Desactivado"
-          : dish.isOutOfStock
-            ? "Agotado"
-            : "En Carta"}
-      </button>
-
+              ? "Agotado"
+              : "En Carta"}
+        </button>
+      ) : (
+        <span
+          className={`hidden rounded-full border px-2.5 py-1 text-[10px] font-semibold sm:block ${
+            !dish.isActive
+              ? "border-border bg-muted text-muted-foreground"
+              : dish.isOutOfStock
+                ? "border-destructive/20 bg-destructive/10 text-destructive"
+                : "border-success/20 bg-success/10 text-success"
+          }`}
+        >
+          {!dish.isActive
+            ? "Desactivado"
+            : dish.isOutOfStock
+              ? "Agotado"
+              : "En Carta"}
+        </span>
+      )}
       {/* Acciones */}
       <div className="flex items-center gap-1">
-        <motion.button
-          type="button"
-          whileTap={{ scale: 0.92 }}
-          onClick={() => onEdit(dish)}
-          className="cursor-pointer rounded-lg bg-muted p-2 text-muted-foreground hover:text-foreground"
-        >
-          <Edit3 className="h-3.5 w-3.5" />
-        </motion.button>
+        {canEdit && (
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.92 }}
+            onClick={() => onEdit(dish)}
+            className="cursor-pointer rounded-lg bg-muted p-2 text-muted-foreground hover:text-foreground"
+            title="Editar platillo"
+          >
+            <Edit3 className="h-3.5 w-3.5" />
+          </motion.button>
+        )}
 
-        <motion.button
-          type="button"
-          whileTap={{ scale: 0.92 }}
-          onClick={() => onDelete(dish.id)}
-          className="cursor-pointer rounded-lg bg-muted p-2 text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </motion.button>
+        {canDelete && (
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.92 }}
+            onClick={() => onDelete(dish.id)}
+            className="cursor-pointer rounded-lg bg-muted p-2 text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
+            title="Eliminar platillo"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </motion.button>
+        )}
       </div>
     </motion.div>
   );

@@ -11,6 +11,14 @@ const ROLE_DEFAULT_REDIRECT: Record<AppRole, string> = {
   chef: "/kds",
 };
 
+export const ROLE_KDS_BACK_ROUTE: Record<AppRole, string> = {
+  owner: "/",
+  admin: "/",
+  cashier: "/orders",
+  waiter: "/orders",
+  chef: "/menu",
+};
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: {

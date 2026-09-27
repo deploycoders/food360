@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import type { TeamMember } from "@/types/team";
+import React, { useEffect, useState } from "react";
+import type { TeamMember, TeamRole } from "@/types/team";
 import {
   X,
   Mail,
@@ -12,6 +12,7 @@ import {
   UserX,
   UserCheck,
   Monitor,
+  Save,
 } from "lucide-react";
 
 interface TeamProfileDrawerProps {
@@ -19,6 +20,13 @@ interface TeamProfileDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onToggleStatus?: (id: string) => void;
+  canManageStatus: boolean;
+  canUpdateRole: boolean;
+  canRemove: boolean;
+  onUpdateRole?: (
+    id: string,
+    role: Exclude<TeamRole, "owner">,
+  ) => void | Promise<void>;
 }
 
 export function TeamProfileDrawer({
@@ -26,8 +34,42 @@ export function TeamProfileDrawer({
   isOpen,
   onClose,
   onToggleStatus,
+  onUpdateRole,
+  canManageStatus,
+  canUpdateRole,
+  canRemove,
 }: TeamProfileDrawerProps) {
   const [activeTab, setActiveTab] = useState<"details" | "logs">("details");
+  const [selectedRole, setSelectedRole] =
+    useState<Exclude<TeamRole, "owner">>("admin");
+
+  const [savingRole, setSavingRole] = useState(false);
+
+  useEffect(() => {
+    if (!member || member.role === "owner") return;
+
+    setSelectedRole(member.role);
+  }, [member]);
+
+  const handleSaveRole = async () => {
+    if (!member || !canUpdateRole) return;
+
+    // Nunca modificar el owner desde aquí
+    if (member.role === "owner") return;
+
+    // No hacer nada si no cambió
+    if (selectedRole === member.role) return;
+
+    try {
+      setSavingRole(true);
+
+      await onUpdateRole?.(member.id, selectedRole);
+    } catch (error) {
+      console.error("Error updating member role:", error);
+    } finally {
+      setSavingRole(false);
+    }
+  };
 
   if (!isOpen || !member) return null;
 
@@ -60,9 +102,9 @@ export function TeamProfileDrawer({
             {/* Acciones flotantes sobre la portada */}
             <div className="absolute top-3 left-0 right-0 flex items-center justify-between px-4 z-10">
               {/* No mostrar acciones para propietario */}
-              {member.role !== "owner" ? (
+              {canManageStatus && member.role !== "owner" && (
                 <button
-                  onClick={() => onToggleStatus && onToggleStatus(member.id)}
+                  onClick={() => onToggleStatus?.(member.id)}
                   className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium backdrop-blur-md transition-all cursor-pointer ${
                     member.isActive
                       ? "bg-black/40 text-red-300 hover:bg-black/60"
@@ -81,8 +123,6 @@ export function TeamProfileDrawer({
                     </>
                   )}
                 </button>
-              ) : (
-                <div />
               )}
 
               <button
@@ -94,11 +134,10 @@ export function TeamProfileDrawer({
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between border-b border-border/50 px-5 py-3.5 bg-muted/20">
-            {/* No mostrar acciones para propietario */}
-            {member.role !== "owner" ? (
+          <div className="flex w-full items-center justify-between border-b border-border/50 px-5 py-3.5 bg-muted/20">
+            {canManageStatus && member.role !== "owner" ? (
               <button
-                onClick={() => onToggleStatus && onToggleStatus(member.id)}
+                onClick={() => onToggleStatus?.(member.id)}
                 className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
                   member.isActive
                     ? "text-destructive hover:bg-destructive/10"
@@ -224,6 +263,45 @@ export function TeamProfileDrawer({
                   {member.email}
                 </span>
               </div>
+
+              {canUpdateRole && member.role !== "owner" && (
+                <div className="flex items-center justify-between gap-4 py-3">
+                  <span className="flex items-center gap-2.5 text-muted-foreground font-medium">
+                    <ShieldCheck className="h-4 w-4 text-muted-foreground/70" />
+                    Rol
+                  </span>
+
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={selectedRole}
+                      onChange={(e) =>
+                        setSelectedRole(
+                          e.target.value as Exclude<TeamRole, "owner">,
+                        )
+                      }
+                      disabled={savingRole}
+                      className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-foreground outline-none transition-colors focus:border-accent disabled:opacity-50"
+                    >
+                      <option value="admin">Administrador</option>
+                      <option value="chef">Chef</option>
+                      <option value="waiter">Mesero</option>
+                      <option value="cashier">Cajero</option>
+                    </select>
+
+                    {selectedRole !== member.role && (
+                      <button
+                        type="button"
+                        onClick={handleSaveRole}
+                        disabled={savingRole}
+                        className="inline-flex items-center cursor-pointer gap-1.5 rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-accent-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Save className="h-3.5 w-3.5" />
+                        {savingRole ? "Guardando..." : "Guardar"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-between py-3">
                 <span className="flex items-center gap-2.5 text-muted-foreground font-medium">

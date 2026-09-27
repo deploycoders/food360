@@ -6,9 +6,10 @@ import Link from "next/link";
 
 interface MenuHeaderProps {
   onOpenNewDishModal: () => void;
+  canCreate: boolean;
 }
 
-export function MenuHeader({ onOpenNewDishModal }: MenuHeaderProps) {
+export function MenuHeader({ onOpenNewDishModal, canCreate }: MenuHeaderProps) {
   return (
     <header className="pb-5">
       <div className="flex flex-col md:flex-row md:w-full md:justify-between gap-5">
@@ -41,15 +42,17 @@ export function MenuHeader({ onOpenNewDishModal }: MenuHeaderProps) {
           </Link>
 
           {/* Primary action */}
-          <button
-            type="button"
-            onClick={onOpenNewDishModal}
-            className="inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-semibold text-accent-foreground shadow-md shadow-accent/20 transition-all duration-200 hover:opacity-95 active:scale-[0.98] min-[700px]:w-auto"
-          >
-            <Plus className="h-4 w-4 stroke-[2.5]" />
+          {canCreate && (
+            <button
+              type="button"
+              onClick={onOpenNewDishModal}
+              className="inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-semibold text-accent-foreground shadow-md shadow-accent/20 transition-all duration-200 hover:opacity-95 active:scale-[0.98] min-[700px]:w-auto"
+            >
+              <Plus className="h-4 w-4 stroke-[2.5]" />
 
-            <span>Nuevo Platillo</span>
-          </button>
+              <span>Nuevo Platillo</span>
+            </button>
+          )}
         </div>
       </div>
     </header>

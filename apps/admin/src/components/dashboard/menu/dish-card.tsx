@@ -9,6 +9,10 @@ interface DishCardProps {
   onEdit: (dish: Dish) => void;
   onDelete: (dishId: string) => void;
   onToggleAvailability: (dishId: string) => void;
+
+  canEdit: boolean;
+  canDelete: boolean;
+  canManageAvailability: boolean;
 }
 
 export function DishCard({
@@ -16,6 +20,9 @@ export function DishCard({
   onEdit,
   onDelete,
   onToggleAvailability,
+  canEdit,
+  canDelete,
+  canManageAvailability,
 }: DishCardProps) {
   const status = !dish.isActive
     ? "Desactivado"
@@ -49,29 +56,53 @@ export function DishCard({
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => onToggleAvailability(dish.id)}
-            className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold transition-all ${
-              !dish.isActive
-                ? "border-muted-foreground/20 bg-muted text-muted-foreground"
-                : dish.isOutOfStock
-                  ? "border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive/20"
-                  : "border-success/20 bg-success/10 text-success hover:bg-success/20"
-            }`}
-          >
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${
+          {canManageAvailability ? (
+            <button
+              type="button"
+              onClick={() => onToggleAvailability(dish.id)}
+              className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold transition-all ${
                 !dish.isActive
-                  ? "bg-muted-foreground"
+                  ? "border-muted-foreground/20 bg-muted text-muted-foreground"
                   : dish.isOutOfStock
-                    ? "bg-destructive"
-                    : "animate-pulse bg-success"
+                    ? "border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive/20"
+                    : "border-success/20 bg-success/10 text-success hover:bg-success/20"
               }`}
-            />
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  !dish.isActive
+                    ? "bg-muted-foreground"
+                    : dish.isOutOfStock
+                      ? "bg-destructive"
+                      : "animate-pulse bg-success"
+                }`}
+              />
 
-            {status}
-          </button>
+              {status}
+            </button>
+          ) : (
+            <span
+              className={`flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
+                !dish.isActive
+                  ? "border-muted-foreground/20 bg-muted text-muted-foreground"
+                  : dish.isOutOfStock
+                    ? "border-destructive/20 bg-destructive/10 text-destructive"
+                    : "border-success/20 bg-success/10 text-success"
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  !dish.isActive
+                    ? "bg-muted-foreground"
+                    : dish.isOutOfStock
+                      ? "bg-destructive"
+                      : "bg-success"
+                }`}
+              />
+
+              {status}
+            </span>
+          )}
         </div>
 
         {/* Imagen */}
@@ -122,25 +153,29 @@ export function DishCard({
         </span>
 
         <div className="flex items-center gap-1">
-          <motion.button
-            type="button"
-            whileTap={{ scale: 0.92 }}
-            onClick={() => onEdit(dish)}
-            className="cursor-pointer rounded-lg bg-muted p-1.5 text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground"
-            title="Editar platillo"
-          >
-            <Edit3 className="h-3.5 w-3.5" />
-          </motion.button>
+          {canEdit && (
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.92 }}
+              onClick={() => onEdit(dish)}
+              className="cursor-pointer rounded-lg bg-muted p-1.5 text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground"
+              title="Editar platillo"
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+            </motion.button>
+          )}
 
-          <motion.button
-            type="button"
-            whileTap={{ scale: 0.92 }}
-            onClick={() => onDelete(dish.id)}
-            className="cursor-pointer rounded-lg bg-muted p-1.5 text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
-            title="Eliminar platillo"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </motion.button>
+          {canDelete && (
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.92 }}
+              onClick={() => onDelete(dish.id)}
+              className="cursor-pointer rounded-lg bg-muted p-1.5 text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
+              title="Eliminar platillo"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </motion.button>
+          )}
         </div>
       </div>
     </motion.div>

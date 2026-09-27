@@ -9,6 +9,7 @@ interface ProductRow {
   id: string;
   name: string;
   price: number;
+  category_id: string | null;
   is_out_of_stock: boolean | null;
   preparation_time_minutes: number | null;
   category: {
@@ -25,15 +26,16 @@ export async function getDisponibilityItems(
     .from("products")
     .select(
       `
-        id,
-        name,
-        price,
-        is_out_of_stock,
-        preparation_time_minutes,
-        category:categories (
-          name
-        )
-      `,
+    id,
+    name,
+    price,
+    category_id,
+    is_out_of_stock,
+    preparation_time_minutes,
+    category:categories (
+      name
+    )
+  `,
     )
     .eq("restaurant_id", restaurantId)
     .eq("is_active", true)
@@ -48,6 +50,7 @@ export async function getDisponibilityItems(
   return products.map((product) => ({
     id: product.id,
     name: product.name,
+    categoryId: product.category_id,
     category: product.category?.[0]?.name ?? "Sin categoría",
     price: Number(product.price),
     isAvailable: !(product.is_out_of_stock ?? false),

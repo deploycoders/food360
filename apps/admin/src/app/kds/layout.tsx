@@ -12,6 +12,8 @@ import {
   ArrowLeft,
   LogOut,
 } from "lucide-react";
+import { useRestaurant } from "@/context/RestaurantContext";
+import type { AppRole } from "@food360/types";
 import { useLogout } from "@/lib/hooks/use-logout";
 import { confirmLogout } from "../lib/swal";
 
@@ -21,6 +23,20 @@ export default function KDSLayout({ children }: { children: React.ReactNode }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const station = "Cocina General & Brasas";
   const { logout } = useLogout();
+
+  const { role } = useRestaurant();
+
+  const userRole = role as AppRole;
+
+  const KDS_BACK_ROUTES: Record<AppRole, string> = {
+    owner: "/",
+    admin: "/",
+    cashier: "/orders",
+    waiter: "/orders",
+    chef: "/menu",
+  };
+
+  const backRoute = KDS_BACK_ROUTES[userRole] ?? "/";
 
   const handleLogout = async () => {
     const confirmed = await confirmLogout();
@@ -65,7 +81,7 @@ export default function KDSLayout({ children }: { children: React.ReactNode }) {
         {/* Izquierda: Volver y Estación */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <Link
-            href="/"
+            href={backRoute}
             className="p-2 sm:px-3 sm:py-1.5 bg-muted hover:bg-muted/80 border border-border rounded-lg text-xs font-semibold text-foreground transition-colors"
             title="Volver a CMS"
           >

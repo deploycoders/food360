@@ -11,7 +11,7 @@ import {
   DisponibilityFilterType,
   DisponibilityItem,
 } from "@/types/disponibility";
-
+import { hasPermission, type AppRole } from "@food360/types";
 import { useRestaurant } from "@/context/RestaurantContext";
 import { useCategories } from "@/context/CategoriesContext";
 import { useProducts } from "@/context/ProductsContext";
@@ -22,7 +22,7 @@ import {
 } from "@/services/availability.service";
 
 export default function DisponibilityControlPage() {
-  const { restaurantId, loading: restaurantLoading } = useRestaurant();
+  const { restaurantId, role, loading: restaurantLoading } = useRestaurant();
 
   const { categories, loading: categoriesLoading } = useCategories();
 
@@ -40,6 +40,10 @@ export default function DisponibilityControlPage() {
     useState<DisponibilityFilterType>("all");
 
   const [selectedCategory, setSelectedCategory] = useState("all");
+
+  const userRole = role as AppRole;
+
+  const canManageAvailability = hasPermission(userRole, "disponibility.manage");
 
   // ============================================================
   // MAPA DE CATEGORÍAS
@@ -276,6 +280,7 @@ export default function DisponibilityControlPage() {
         onCategoryChange={setSelectedCategory}
         categories={categoryOptions}
         counts={counts}
+        canManage={canManageAvailability}
         onEnableAll={handleEnableAll}
         onDisableAll={handleDisableAll}
       />
@@ -292,7 +297,12 @@ export default function DisponibilityControlPage() {
       ) : filteredItems.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredItems.map((item) => (
-            <StockCard key={item.id} item={item} onToggle={handleToggle} />
+            <StockCard
+              key={item.id}
+              item={item}
+              onToggle={handleToggle}
+              canManage={canManageAvailability}
+            />
           ))}
         </div>
       ) : (

@@ -105,12 +105,40 @@ export async function updateTeamMemberStatus(
       updated_at: new Date().toISOString(),
     })
     .eq("id", membershipId)
-    .select("id, is_active")
-    .single();
+    .select("id, is_active");
 
   if (error) {
     console.error("Error updating team member status:", error);
+    throw error;
+  }
 
+  if (!data || data.length === 0) {
+    throw new Error(
+      "No se pudo actualizar el miembro. La fila no existe o la política RLS no permite modificarla.",
+    );
+  }
+
+  return data[0];
+}
+
+export async function updateTeamMemberRole(
+  membershipId: string,
+  role: "admin" | "chef" | "waiter" | "cashier",
+) {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("restaurant_members")
+    .update({
+      role,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", membershipId)
+    .select("id, role")
+    .single();
+
+  if (error) {
+    console.error("Error updating team member role:", error);
     throw error;
   }
 

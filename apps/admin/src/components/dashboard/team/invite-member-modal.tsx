@@ -13,12 +13,14 @@ interface InviteMemberModalProps {
     phone: string;
     role: TeamRole;
   }) => void;
+  canInviteAdmin: boolean;
 }
 
 export function InviteMemberModal({
   isOpen,
   onClose,
   onInvite,
+  canInviteAdmin,
 }: InviteMemberModalProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -121,7 +123,9 @@ export function InviteMemberModal({
             >
               <option value="chef">{TEAM_ROLE_LABELS.chef}</option>
 
-              <option value="admin">{TEAM_ROLE_LABELS.admin}</option>
+              {canInviteAdmin && (
+                <option value="admin">{TEAM_ROLE_LABELS.admin}</option>
+              )}
 
               <option value="waiter">{TEAM_ROLE_LABELS.waiter}</option>
 

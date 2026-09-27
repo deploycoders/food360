@@ -4,3 +4,6 @@ export * from "./role-permissions";
 export * from "./has-permission";
 export * from "./profile";
 export * from "./restaurant-member";
+export * from "./common";
+export * from "./table";
+export * from "./reservation";

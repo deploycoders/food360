@@ -11,6 +11,7 @@ interface TeamCardsProps {
   members: TeamMember[];
   onToggleStatus: (id: string) => void | Promise<void>;
   onSelectMember: (member: TeamMember) => void;
+  canManageStatus: boolean;
 }
 
 const ROLE_BADGES: Record<TeamRole, string> = {
@@ -25,6 +26,7 @@ export function TeamCards({
   members,
   onToggleStatus,
   onSelectMember,
+  canManageStatus,
 }: TeamCardsProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
@@ -34,6 +36,7 @@ export function TeamCards({
           member={member}
           onToggleStatus={onToggleStatus}
           onSelectMember={onSelectMember}
+          canManageStatus={canManageStatus}
         />
       ))}
     </div>
@@ -44,10 +47,12 @@ function MemberCard({
   member,
   onToggleStatus,
   onSelectMember,
+  canManageStatus,
 }: {
   member: TeamMember;
   onToggleStatus: (id: string) => void | Promise<void>;
   onSelectMember: (member: TeamMember) => void;
+  canManageStatus: boolean;
 }) {
   const [imgError, setImgError] = useState(false);
 
@@ -83,7 +88,7 @@ function MemberCard({
     if (confirmed) {
       await onToggleStatus(member.id);
 
-      showTimedToast(`Cuenta desactivada correctamente`, "info");
+      showTimedToast("Cuenta desactivada correctamente", "info");
     }
   };
 
@@ -128,7 +133,7 @@ function MemberCard({
               <Eye className="w-4 h-4" />
             </button>
 
-            {member.role !== "owner" && (
+            {canManageStatus && member.role !== "owner" && (
               <button
                 type="button"
                 onClick={handleDeactivate}

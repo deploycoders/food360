@@ -14,6 +14,10 @@ interface MenuProductsProps {
   onEdit: (dish: Dish) => void;
   onDelete: (dishId: string) => void;
   onToggleAvailability: (dishId: string) => void;
+
+  canEdit: boolean;
+  canDelete: boolean;
+  canManageAvailability: boolean;
 }
 
 export function MenuProducts({
@@ -22,6 +26,9 @@ export function MenuProducts({
   onEdit,
   onDelete,
   onToggleAvailability,
+  canEdit,
+  canDelete,
+  canManageAvailability,
 }: MenuProductsProps) {
   if (dishes.length === 0) {
     return (
@@ -47,6 +54,9 @@ export function MenuProducts({
               onEdit={onEdit}
               onDelete={onDelete}
               onToggleAvailability={onToggleAvailability}
+              canEdit={canEdit}
+              canDelete={canDelete}
+              canManageAvailability={canManageAvailability}
             />
           ))}
         </motion.div>
@@ -59,6 +69,9 @@ export function MenuProducts({
               onEdit={onEdit}
               onDelete={onDelete}
               onToggleAvailability={onToggleAvailability}
+              canEdit={canEdit}
+              canDelete={canDelete}
+              canManageAvailability={canManageAvailability}
             />
           ))}
         </motion.div>
