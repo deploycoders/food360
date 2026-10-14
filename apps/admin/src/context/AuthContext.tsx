@@ -46,6 +46,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const supabase = createClient();
+
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const updateLastSeen = async () => {
+      const { error } = await supabase.rpc("update_last_seen");
+
+      if (error) {
+        console.error("Error updating last_seen_at:", error);
+      }
+    };
+
+    // Registrar inmediatamente la conexión
+    updateLastSeen();
+
+    // Mantener actualizado mientras la sesión esté activa
+    intervalId = setInterval(() => {
+      updateLastSeen();
+    }, 30_000);
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [user]);
+
   async function signOut() {
     const supabase = createClient();
 

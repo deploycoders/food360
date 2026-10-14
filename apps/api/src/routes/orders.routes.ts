@@ -178,13 +178,7 @@ ordersRouter.post("/", async (req: Request, res: Response) => {
  *         description: Error interno del servidor
  */
 ordersRouter.get("/", async (req: Request, res: Response) => {
-  const restaurant_id = req.query.restaurant_id as string;
-
-  if (!restaurant_id) {
-    return res
-      .status(400)
-      .json({ success: false, error: "restaurant_id query param is required" });
-  }
+  const restaurant_id = req.restaurantId;
 
   try {
     const { data: orders, error } = await supabaseAdmin

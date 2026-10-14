@@ -89,17 +89,7 @@ export function CategoriesProvider({ children }: { children: ReactNode }) {
         name,
       });
 
-      setCategories((current) => {
-        const updated = [...current, category];
-
-        return updated.sort((a, b) => {
-          if (a.sortOrder !== b.sortOrder) {
-            return a.sortOrder - b.sortOrder;
-          }
-
-          return a.name.localeCompare(b.name);
-        });
-      });
+      setCategories((current) => sortCategories([...current, category]));
 
       return category;
     } catch (error) {
@@ -208,4 +198,14 @@ export function useCategories() {
   }
 
   return context;
+}
+
+function sortCategories(categories: Category[]): Category[] {
+  return [...categories].sort((a, b) => {
+    if (a.sortOrder !== b.sortOrder) {
+      return a.sortOrder - b.sortOrder;
+    }
+
+    return a.name.localeCompare(b.name);
+  });
 }

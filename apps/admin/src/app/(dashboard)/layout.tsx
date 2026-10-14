@@ -1,8 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+
 import type { AppRole } from "@food360/types";
-import { Sidebar } from "@/components/sidebar";
-import { Header } from "@/components/header";
+
+import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
 export default async function DashboardLayout({
   children,
@@ -40,17 +41,5 @@ export default async function DashboardLayout({
     }
   }
 
-  return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      <Sidebar userRole={userRole} />
-
-      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-        <Header />
-
-        <main className="flex-1 overflow-y-auto p-6 bg-background">
-          <div className="mx-auto">{children}</div>
-        </main>
-      </div>
-    </div>
-  );
+  return <DashboardShell userRole={userRole}>{children}</DashboardShell>;
 }

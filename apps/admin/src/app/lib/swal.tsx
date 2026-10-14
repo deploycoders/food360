@@ -64,6 +64,22 @@ export const confirmDeleteCategory = async (name: string): Promise<boolean> => {
   return result.isConfirmed;
 };
 
+export const confirmDesactivateProduct = async (
+  name: string,
+): Promise<boolean> => {
+  const result = await Food360Swal.fire({
+    title: "Desactivar producto?",
+    text: `"${name}" será desactivado Si tiene pedidos asociados, la base de datos podría impedir la desactivación.`,
+    icon: "warning",
+    iconColor: "var(--warning)",
+    showCancelButton: true,
+    confirmButtonText: "Sí, desactivar",
+    cancelButtonText: "Cancelar",
+  });
+
+  return result.isConfirmed;
+};
+
 export const showTimedToast = (
   title: string,
   type: ToastType = "success",

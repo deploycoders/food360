@@ -4,8 +4,8 @@ import { useState } from "react";
 import { Plus, Search } from "lucide-react";
 import type { Category } from "@/types/menu";
 import { useCategories } from "@/context/CategoriesContext";
-import CategoryRow from "@/components/dashboard/menu/categories/CategoryRow";
-import CategoryModal from "@/components/dashboard/menu/categories/CategoryModal";
+import CategoryRow from "@/components/dashboard/menu/categories/categories-row";
+import CategoryModal from "@/components/dashboard/menu/categories/categories-modal";
 
 export default function CategoriesPage() {
   const {
@@ -74,7 +74,7 @@ export default function CategoriesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Categorías del Menú
           </h1>
 

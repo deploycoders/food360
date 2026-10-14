@@ -14,7 +14,7 @@ export function StockHeader({ outOfStockCount }: StockHeaderProps) {
         <div className="flex items-center gap-3">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Control Rápido de Stock & Disponibilidad
+              Disponibilidad de productos
             </h1>
             <p className="text-sm text-muted-foreground">
               Habilita o pausa platillos al instante según el inventario en

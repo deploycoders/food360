@@ -3,6 +3,10 @@ export type ISODateTime = string;
 
 export const FOOD360_TYPES_PACKAGE = "@food360/types";
 
+// ============================================================
+// RESTAURANT
+// ============================================================
+
 export interface Restaurant {
   id: UUID;
   name: string;
@@ -20,6 +24,10 @@ export interface Restaurant {
   updatedAt: ISODateTime;
 }
 
+// ============================================================
+// CATEGORY
+// ============================================================
+
 export interface Category {
   id: UUID;
   restaurantId: UUID;
@@ -30,6 +38,10 @@ export interface Category {
   createdAt: ISODateTime;
   updatedAt: ISODateTime;
 }
+
+// ============================================================
+// PRODUCT
+// ============================================================
 
 export interface Product {
   id: UUID;
@@ -46,17 +58,35 @@ export interface Product {
   updatedAt: ISODateTime;
 }
 
+// ============================================================
+// TABLES
+// ============================================================
+
 export interface Table {
   id: UUID;
   restaurantId: UUID;
-  code: string;
-  name?: string | null;
-  capacity: number;
-  qrUrl?: string | null;
-  isActive: boolean;
-  createdAt: ISODateTime;
-  updatedAt: ISODateTime;
+  tableNumber: number;
 }
+
+export type TableStatus = "FREE" | "OCCUPIED";
+
+export interface TableWithStatus extends Table {
+  status: TableStatus;
+  activeOrdersCount: number;
+  reservationCount: number;
+}
+
+export interface CreateTableInput {
+  tableNumber: number;
+}
+
+export interface UpdateTableInput {
+  tableNumber: number;
+}
+
+// ============================================================
+// CUSTOMER
+// ============================================================
 
 export interface Customer {
   id: UUID;
@@ -68,6 +98,10 @@ export interface Customer {
   createdAt: ISODateTime;
   updatedAt: ISODateTime;
 }
+
+// ============================================================
+// ORDERS
+// ============================================================
 
 export type OrderStatus =
   | "pending"
@@ -106,23 +140,54 @@ export interface OrderItem {
   updatedAt: ISODateTime;
 }
 
+// ============================================================
+// RESERVATIONS
+// ============================================================
+
 export type ReservationStatus =
-  | "pending"
-  | "confirmed"
-  | "seated"
-  | "cancelled"
-  | "no_show"
-  | "completed";
+  | "REQUESTED"
+  | "CONFIRMED"
+  | "ARRIVED"
+  | "SEATED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "NO_SHOW";
 
 export interface Reservation {
   id: UUID;
   restaurantId: UUID;
+  customerId: UUID | null;
+  tableId: UUID | null;
+
+  reservationDate: ISODateTime;
+  partySize: number;
+
+  status: ReservationStatus;
+
+  arrivedAt: ISODateTime | null;
+  seatedAt: ISODateTime | null;
+
+  createdAt: ISODateTime;
+}
+
+export interface CreateReservationInput {
   customerId?: UUID | null;
   tableId?: UUID | null;
-  status: ReservationStatus;
+  reservationDate: ISODateTime;
   partySize: number;
-  reservedAt: ISODateTime;
-  notes?: string | null;
-  createdAt: ISODateTime;
-  updatedAt: ISODateTime;
 }
+
+export interface UpdateReservationInput {
+  customerId?: UUID | null;
+  tableId?: UUID | null;
+  reservationDate?: ISODateTime;
+  partySize?: number;
+}
+
+export type ReservationAction =
+  | "confirm"
+  | "arrive"
+  | "seat"
+  | "complete"
+  | "cancel"
+  | "no_show";
