@@ -10,6 +10,22 @@ interface ApiResponse<T> {
   error?: string;
 }
 
+interface ApiTable {
+  id: string;
+  restaurant_id: string;
+  table_number: number;
+  public_code: string;
+}
+
+function mapTable(table: ApiTable): Table {
+  return {
+    id: table.id,
+    restaurantId: table.restaurant_id,
+    tableNumber: table.table_number,
+    publicCode: table.public_code,
+  };
+}
+
 async function getAccessToken(): Promise<string> {
   const supabase = createClient();
 
@@ -50,28 +66,34 @@ async function apiRequest<T>(
 }
 
 export async function getTables(): Promise<Table[]> {
-  return apiRequest<Table[]>("/api/v1/tables");
+  const data = await apiRequest<ApiTable[]>("/api/v1/tables");
+
+  return data.map(mapTable);
 }
 
 export async function createTable(input: CreateTableInput): Promise<Table> {
-  return apiRequest<Table>("/api/v1/tables", {
+  const data = await apiRequest<ApiTable>("/api/v1/tables", {
     method: "POST",
     body: JSON.stringify({
       table_number: input.tableNumber,
     }),
   });
+
+  return mapTable(data);
 }
 
 export async function updateTable(
   tableId: string,
   input: UpdateTableInput,
 ): Promise<Table> {
-  return apiRequest<Table>(`/api/v1/tables/${tableId}`, {
+  const data = await apiRequest<ApiTable>(`/api/v1/tables/${tableId}`, {
     method: "PATCH",
     body: JSON.stringify({
       table_number: input.tableNumber,
     }),
   });
+
+  return mapTable(data);
 }
 
 export async function deleteTable(tableId: string): Promise<void> {

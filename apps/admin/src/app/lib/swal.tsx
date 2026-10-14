@@ -1,84 +1,61 @@
+"use client";
+
 import Swal from "sweetalert2";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, Info, XCircle } from "lucide-react";
+import { renderToStaticMarkup } from "react-dom/server";
+
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  OctagonAlert,
+  XCircle,
+} from "lucide-react";
 
 export type ToastType = "success" | "info" | "warning" | "error";
 
-// Modal elegante para acciones críticas (desactivar, borrar, etc.)
+/*                                SWEETALERT                                  */
+
 const Food360Swal = Swal.mixin({
+  width: "420px",
+  padding: "0",
+  background: "var(--card)",
+  color: "var(--foreground)",
+  backdrop: "rgba(0, 0, 0, 0.55)",
+  buttonsStyling: false,
+
   customClass: {
     popup:
-      "bg-card border border-border rounded-2xl shadow-2xl text-foreground font-sans p-6",
-    title: "text-base font-bold text-foreground tracking-tight",
-    htmlContainer: "text-xs text-muted-foreground mt-2",
+      "food360-swal-popup rounded-2xl border border-border bg-card shadow-2xl overflow-hidden",
+
+    title:
+      "food360-swal-title text-[15px] font-semibold tracking-tight text-foreground",
+
+    htmlContainer:
+      "food360-swal-description mt-2 px-1 text-[13px] leading-relaxed text-muted-foreground",
+
+    actions:
+      "food360-swal-actions mt-6 flex w-full items-center justify-end gap-2 px-5 pb-5",
+
     confirmButton:
-      "px-4 py-2.5 rounded-xl bg-accent text-accent-foreground font-semibold text-xs transition-all active:scale-95 mx-1 cursor-pointer",
+      "food360-swal-confirm inline-flex items-center justify-center rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-accent-foreground shadow-sm transition-all hover:opacity-90 active:scale-[0.98]",
+
     cancelButton:
-      "px-4 py-2.5 rounded-xl bg-muted text-muted-foreground hover:text-foreground font-semibold text-xs transition-all active:scale-95 mx-1 cursor-pointer",
-    actions: "mt-4 gap-2",
+      "food360-swal-cancel inline-flex items-center justify-center rounded-xl border border-border bg-background px-4 py-2.5 text-xs font-semibold text-muted-foreground transition-all hover:bg-muted hover:text-foreground active:scale-[0.98]",
+
+    icon: "food360-swal-icon !mx-auto !mt-5 !mb-3 !h-12 !w-12",
   },
-  buttonsStyling: false,
+
+  showClass: {
+    popup: "animate__animated animate__fadeInUp animate__faster",
+  },
+
+  hideClass: {
+    popup: "animate__animated animate__fadeOutDown animate__faster",
+  },
 });
 
-export const confirmDeactivateMember = async (
-  name: string,
-): Promise<boolean> => {
-  const result = await Food360Swal.fire({
-    title: `¿Desactivar a ${name}?`,
-    text: "El usuario no podrá acceder al sistema, pero se conservará su historial de actividades.",
-    icon: "warning",
-    iconColor: "var(--warning)",
-    showCancelButton: true,
-    confirmButtonText: "Sí, desactivar",
-    cancelButtonText: "Cancelar",
-  });
-
-  return result.isConfirmed;
-};
-
-export const confirmLogout = async (): Promise<boolean> => {
-  const result = await Food360Swal.fire({
-    title: "¿Cerrar sesión?",
-    text: "¿Estás seguro de que deseas cerrar sesión? Se te redirigirá a la página de inicio de sesión.",
-    icon: "warning",
-    iconColor: "var(--warning)",
-    showCancelButton: true,
-    confirmButtonText: "Sí, cerrar sesión",
-    cancelButtonText: "Cancelar",
-  });
-
-  return result.isConfirmed;
-};
-
-export const confirmDeleteCategory = async (name: string): Promise<boolean> => {
-  const result = await Food360Swal.fire({
-    title: "¿Eliminar categoría?",
-    text: `"${name}" será eliminada permanentemente. Si tiene platillos asociados, la base de datos podría impedir la eliminación.`,
-    icon: "warning",
-    iconColor: "var(--warning)",
-    showCancelButton: true,
-    confirmButtonText: "Sí, eliminar",
-    cancelButtonText: "Cancelar",
-  });
-
-  return result.isConfirmed;
-};
-
-export const confirmDesactivateProduct = async (
-  name: string,
-): Promise<boolean> => {
-  const result = await Food360Swal.fire({
-    title: "Desactivar producto?",
-    text: `"${name}" será desactivado Si tiene pedidos asociados, la base de datos podría impedir la desactivación.`,
-    icon: "warning",
-    iconColor: "var(--warning)",
-    showCancelButton: true,
-    confirmButtonText: "Sí, desactivar",
-    cancelButtonText: "Cancelar",
-  });
-
-  return result.isConfirmed;
-};
+/*                              TOAST / SONNER                                */
 
 export const showTimedToast = (
   title: string,
@@ -87,14 +64,17 @@ export const showTimedToast = (
 ) => {
   const toastOptions = {
     description,
+    duration: 3000,
+
     style: {
       background: "var(--card)",
       color: "var(--foreground)",
-      borderColor: "var(--border)",
+      border: "1px solid var(--border)",
       borderRadius: "14px",
       fontSize: "13px",
       fontWeight: "500",
-      boxShadow: "0 10px 30px -5px rgba(0, 0, 0, 0.08)",
+      boxShadow: "0 10px 30px -5px rgba(0, 0, 0, 0.12)",
+      padding: "12px 14px",
     },
   };
 
@@ -102,29 +82,256 @@ export const showTimedToast = (
     case "success":
       toast.success(title, {
         ...toastOptions,
-        icon: <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />,
+        icon: <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />,
       });
       break;
 
     case "info":
       toast.info(title, {
         ...toastOptions,
-        icon: <Info className="h-4 w-4 text-accent shrink-0" />,
+        icon: <Info className="h-4 w-4 shrink-0 text-accent" />,
       });
       break;
 
     case "warning":
       toast.warning(title, {
         ...toastOptions,
-        icon: <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />,
+        icon: <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />,
       });
       break;
 
     case "error":
       toast.error(title, {
         ...toastOptions,
-        icon: <XCircle className="h-4 w-4 text-rose-500 shrink-0" />,
+        icon: <XCircle className="h-4 w-4 shrink-0 text-rose-500" />,
       });
       break;
+  }
+};
+
+/*                          CONFIRMAR DESACTIVACIÓN                           */
+
+export const confirmDeactivateMember = async (
+  memberName: string,
+  onConfirm: () => Promise<void>,
+) => {
+  const result = await Food360Swal.fire({
+    icon: "warning",
+    title: `¿Desactivar a ${memberName}?`,
+    text: "El miembro dejará de tener acceso al restaurante hasta que sea activado nuevamente.",
+    showCancelButton: true,
+    confirmButtonText: "Desactivar",
+    cancelButtonText: "Cancelar",
+    reverseButtons: true,
+    focusCancel: true,
+  });
+
+  if (!result.isConfirmed) {
+    return;
+  }
+
+  try {
+    await onConfirm();
+
+    showTimedToast(`${memberName} fue desactivado correctamente`, "success");
+  } catch (error) {
+    console.error("Error desactivando miembro:", error);
+
+    showTimedToast(
+      "No se pudo desactivar el miembro",
+      "error",
+      error instanceof Error
+        ? error.message
+        : "Ocurrió un error al desactivar el miembro.",
+    );
+  }
+};
+
+/*                              CONFIRMAR LOGOUT                               */
+
+export const confirmLogout = async (onConfirm: () => Promise<void>) => {
+  const result = await Food360Swal.fire({
+    icon: "warning",
+    title: "¿Cerrar sesión?",
+    text: "Tendrás que iniciar sesión nuevamente para acceder al panel.",
+    showCancelButton: true,
+    confirmButtonText: "Cerrar sesión",
+    cancelButtonText: "Cancelar",
+    reverseButtons: true,
+    focusCancel: true,
+  });
+
+  if (!result.isConfirmed) {
+    return;
+  }
+
+  try {
+    await onConfirm();
+  } catch (error) {
+    console.error("Error cerrando sesión:", error);
+
+    showTimedToast(
+      "No se pudo cerrar la sesión",
+      "error",
+      error instanceof Error
+        ? error.message
+        : "Ocurrió un error al cerrar la sesión.",
+    );
+  }
+};
+
+/*                            ELIMINAR CATEGORÍA                              */
+
+export const confirmDeleteCategory = async (
+  categoryName: string,
+  onConfirm: () => Promise<void>,
+) => {
+  const result = await Food360Swal.fire({
+    icon: "warning",
+    title: `¿Eliminar "${categoryName}"?`,
+    text: "Esta acción no se puede deshacer.",
+    showCancelButton: true,
+    confirmButtonText: "Eliminar",
+    cancelButtonText: "Cancelar",
+    reverseButtons: true,
+    focusCancel: true,
+  });
+
+  if (!result.isConfirmed) {
+    return;
+  }
+
+  try {
+    await onConfirm();
+
+    showTimedToast(`"${categoryName}" eliminada correctamente`, "success");
+  } catch (error) {
+    console.error("Error eliminando categoría:", error);
+
+    showTimedToast(
+      "No se pudo eliminar la categoría",
+      "error",
+      error instanceof Error
+        ? error.message
+        : "Ocurrió un error al eliminar la categoría.",
+    );
+  }
+};
+
+/*                         DESACTIVAR / ACTIVAR PRODUCTO                      */
+
+export const confirmDesactivateProduct = async (
+  productName: string,
+  onConfirm: () => Promise<void>,
+) => {
+  const result = await Food360Swal.fire({
+    icon: "warning",
+    title: `¿Desactivar "${productName}"?`,
+    text: "El producto dejará de estar disponible en la carta.",
+    showCancelButton: true,
+    confirmButtonText: "Desactivar",
+    cancelButtonText: "Cancelar",
+    reverseButtons: true,
+    focusCancel: true,
+  });
+
+  if (!result.isConfirmed) {
+    return;
+  }
+
+  try {
+    await onConfirm();
+
+    showTimedToast(`"${productName}" desactivado correctamente`, "success");
+  } catch (error) {
+    console.error("Error desactivando producto:", error);
+
+    showTimedToast(
+      "No se pudo desactivar el producto",
+      "error",
+      error instanceof Error
+        ? error.message
+        : "Ocurrió un error al desactivar el producto.",
+    );
+  }
+};
+
+/*                              ELIMINAR MESA                                 */
+export const showTableCreated = (tableNumber: number) => {
+  showTimedToast(
+    `La mesa #${tableNumber} fue agregada correctamente.`,
+    "success",
+  );
+};
+
+export const showTableUpdated = (tableNumber: number) => {
+  showTimedToast(
+    `La mesa ha sido actualizada a la número #${tableNumber}.`,
+    "success",
+  );
+};
+
+export const confirmDeleteTable = async (
+  tableNumber: number,
+  onConfirm: () => Promise<void>,
+) => {
+  const result = await Food360Swal.fire({
+    icon: "warning",
+    iconColor: "var(--accent)",
+
+    title: `¿Eliminar mesa #${tableNumber}?`,
+
+    text: "Esta acción no se puede deshacer. Si la mesa tiene órdenes activas, no podrá eliminarse.",
+
+    showCancelButton: true,
+
+    confirmButtonText: "Eliminar mesa",
+    cancelButtonText: "Cancelar",
+
+    reverseButtons: true,
+    focusCancel: true,
+
+    customClass: {
+      popup: "rounded-2xl border border-border bg-card shadow-2xl",
+
+      icon: "!mx-auto !mt-6 !mb-2 !h-14 !w-14 !border-[2px]",
+
+      title:
+        "!px-5 !text-center !text-[17px] !font-bold !tracking-tight !text-foreground",
+
+      htmlContainer:
+        "!px-6 !text-center !text-[13px] !leading-relaxed !text-muted-foreground",
+
+      actions: "!mt-6 !grid !w-full !grid-cols-2 !gap-2 !px-5 !pb-5",
+
+      confirmButton:
+        "!m-0 !w-full !rounded-xl !bg-destructive !px-4 !py-2.5 !text-xs !font-semibold !text-destructive-foreground !shadow-sm !transition-all hover:!opacity-90 active:!scale-[0.98]",
+
+      cancelButton:
+        "!m-0 !w-full !rounded-xl !bg-background !px-4 !py-2.5 !text-xs !font-semibold !text-foreground !transition-all hover:!bg-muted active:!scale-[0.98]",
+    },
+  });
+
+  if (!result.isConfirmed) {
+    return;
+  }
+
+  try {
+    await onConfirm();
+
+    showTimedToast(
+      `La mesa #${tableNumber} fue eliminada correctamente.`,
+      "success",
+    );
+  } catch (error) {
+    console.error("Error eliminando mesa:", error);
+
+    showTimedToast(
+      "No se pudo eliminar la mesa",
+      "error",
+      error instanceof Error
+        ? error.message
+        : "Ocurrió un error al eliminar la mesa.",
+    );
   }
 };

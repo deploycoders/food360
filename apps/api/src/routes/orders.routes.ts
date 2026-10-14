@@ -3,28 +3,17 @@ import { supabaseAdmin } from "@food360/database";
 
 export const ordersRouter: Router = Router();
 
-type CreateOrderItem = Record<string, unknown>;
+interface CreateOrderItemInput {
+  product_id: string;
+  quantity: number;
+}
 
 interface CreateOrderBody {
-  restaurant_id?: string;
   phone?: string;
   full_name?: string;
   origin?: string;
-  total_amount?: number;
-  items?: CreateOrderItem[];
+  items?: CreateOrderItemInput[];
 }
-
-const isCreateOrderBody = (
-  body: CreateOrderBody,
-): body is Required<CreateOrderBody> =>
-  Boolean(
-    body.restaurant_id &&
-      body.phone &&
-      body.full_name &&
-      body.origin &&
-      typeof body.total_amount === "number" &&
-      Array.isArray(body.items),
-  );
 
 /**
  * @openapi
@@ -84,49 +73,151 @@ const isCreateOrderBody = (
  *       500:
  *         description: Error interno del servidor
  */
+
 ordersRouter.post("/", async (req: Request, res: Response) => {
   const body = req.body as CreateOrderBody;
 
-  if (!isCreateOrderBody(body)) {
+  const restaurantId = req.restaurantId;
+  const { phone, full_name, origin, items } = body;
+
+  if (
+    !restaurantId ||
+    typeof phone !== "string" ||
+    !phone.trim() ||
+    typeof full_name !== "string" ||
+    !full_name.trim() ||
+    typeof origin !== "string" ||
+    !origin.trim() ||
+    !Array.isArray(items) ||
+    items.length === 0
+  ) {
     return res.status(400).json({
       success: false,
-      error:
-        "restaurant_id, phone, full_name, origin, total_amount and items are required",
+      error: "phone, full_name, origin and items are required",
     });
   }
 
-  const { restaurant_id, phone, full_name, origin, total_amount, items } = body;
+  const invalidItem = items.some(
+    (item) =>
+      !item ||
+      typeof item.product_id !== "string" ||
+      !item.product_id.trim() ||
+      !Number.isSafeInteger(item.quantity) ||
+      item.quantity <= 0,
+  );
+
+  if (invalidItem) {
+    return res.status(400).json({
+      success: false,
+      error: "Each item must have a product_id and a positive integer quantity",
+    });
+  }
 
   try {
-    let customerId: string | null = null;
+    const productIds = [...new Set(items.map((item) => item.product_id))];
 
-    const { data: existingCustomer } = await supabaseAdmin
-      .from("customers")
-      .select("id")
-      .eq("restaurant_id", restaurant_id)
-      .eq("phone", phone)
-      .maybeSingle();
+    const { data: products, error: productsError } = await supabaseAdmin
+      .from("products")
+      .select("id, restaurant_id, name, price, is_active, is_out_of_stock")
+      .eq("restaurant_id", restaurantId)
+      .in("id", productIds);
 
-    if (existingCustomer) {
-      customerId = existingCustomer.id;
-    } else {
-      const { data: newCustomer, error: newCustomerError } = await supabaseAdmin
+    if (productsError) throw productsError;
+
+    if (!products || products.length !== productIds.length) {
+      return res.status(400).json({
+        success: false,
+        error: "One or more products do not belong to this restaurant",
+      });
+    }
+
+    const productMap = new Map(
+      products.map((product) => [product.id, product]),
+    );
+
+    for (const item of items) {
+      const product = productMap.get(item.product_id);
+
+      if (!product) {
+        return res.status(400).json({
+          success: false,
+          error: "Product not found",
+        });
+      }
+
+      if (!product.is_active || product.is_out_of_stock) {
+        return res.status(400).json({
+          success: false,
+          error: `Product "${product.name}" is inactive or out of stock`,
+        });
+      }
+
+      if (
+        !Number.isFinite(Number(product.price)) ||
+        Number(product.price) < 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: `Product "${product.name}" has an invalid price`,
+        });
+      }
+    }
+
+    const orderItems = items.map((item) => {
+      const product = productMap.get(item.product_id)!;
+
+      return {
+        product_id: product.id,
+        product_name: product.name,
+        quantity: item.quantity,
+        unit_price: Number(product.price),
+      };
+    });
+
+    const totalAmount = orderItems.reduce(
+      (total, item) => total + item.unit_price * item.quantity,
+      0,
+    );
+
+    // Buscar o crear el cliente dentro del restaurante autenticado.
+    const normalizedPhone = phone.trim();
+
+    const { data: existingCustomer, error: customerLookupError } =
+      await supabaseAdmin
         .from("customers")
-        .insert({ restaurant_id, phone, full_name })
         .select("id")
-        .single();
+        .eq("restaurant_id", restaurantId)
+        .eq("phone", normalizedPhone)
+        .maybeSingle();
 
-      if (newCustomerError) throw newCustomerError;
+    if (customerLookupError) throw customerLookupError;
+
+    let customerId = existingCustomer?.id ?? null;
+
+    if (!customerId) {
+      const { data: newCustomer, error: customerInsertError } =
+        await supabaseAdmin
+          .from("customers")
+          .insert({
+            restaurant_id: restaurantId,
+            phone: normalizedPhone,
+            full_name: full_name.trim(),
+          })
+          .select("id")
+          .single();
+
+      if (customerInsertError) throw customerInsertError;
+
       customerId = newCustomer.id;
     }
 
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .insert({
-        restaurant_id,
+        restaurant_id: restaurantId,
         customer_id: customerId,
-        origin,
-        total_amount,
+        origin: origin.trim(),
+        total_amount: totalAmount,
         status: "PENDING",
       })
       .select("id")
@@ -134,23 +225,41 @@ ordersRouter.post("/", async (req: Request, res: Response) => {
 
     if (orderError) throw orderError;
 
-    const orderItems = items.map((item) => ({
-      ...item,
-      order_id: order.id,
-    }));
-
-    const { error: orderItemsError } = await supabaseAdmin
+    const { error: itemsError } = await supabaseAdmin
       .from("order_items")
-      .insert(orderItems);
+      .insert(
+        orderItems.map((item) => ({
+          ...item,
+          order_id: order.id,
+        })),
+      );
 
-    if (orderItemsError) throw orderItemsError;
+    if (itemsError) {
+      // Evitar dejar una orden sin sus artículos si falla el segundo insert.
+      const { error: rollbackError } = await supabaseAdmin
+        .from("orders")
+        .delete()
+        .eq("id", order.id)
+        .eq("restaurant_id", restaurantId);
 
-    return res.status(201).json({ success: true, order_id: order.id });
-  } catch (error: any) {
+      if (rollbackError) {
+        console.error("Error al revertir la orden incompleta:", rollbackError);
+      }
+
+      throw itemsError;
+    }
+
+    return res.status(201).json({
+      success: true,
+      order_id: order.id,
+      total_amount: totalAmount,
+    });
+  } catch (error: unknown) {
     console.error("Error al crear la orden:", error);
+
     return res.status(500).json({
       success: false,
-      error: error?.message || "Unable to create order",
+      error: "Unable to create order",
     });
   }
 });
@@ -195,6 +304,41 @@ ordersRouter.get("/", async (req: Request, res: Response) => {
   }
 });
 
+ordersRouter.get("/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const restaurantId = req.restaurantId;
+
+  try {
+    const { data: order, error } = await supabaseAdmin
+      .from("orders")
+      .select("*, customers(*), order_items(*)")
+      .eq("id", id)
+      .eq("restaurant_id", restaurantId)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: "Order not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: order,
+    });
+  } catch (error: unknown) {
+    console.error("Error al obtener la orden:", error);
+
+    return res.status(500).json({
+      success: false,
+      error: "Unable to retrieve order",
+    });
+  }
+});
+
 /**
  * @openapi
  * /api/v1/orders/{id}/status:
@@ -229,28 +373,61 @@ ordersRouter.get("/", async (req: Request, res: Response) => {
  *       500:
  *         description: Error interno del servidor
  */
+
+const ORDER_STATUSES = [
+  "PENDING",
+  "CONFIRMED",
+  "IN_PROGRESS",
+  "READY",
+  "SERVED",
+  "COMPLETED",
+  "CANCELLED",
+] as const;
+
 ordersRouter.patch("/:id/status", async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status } = req.body as { status?: string };
+  const restaurantId = req.restaurantId;
 
-  if (!status) {
-    return res
-      .status(400)
-      .json({ success: false, error: "status is required" });
+  if (
+    typeof status !== "string" ||
+    !ORDER_STATUSES.includes(status as (typeof ORDER_STATUSES)[number])
+  ) {
+    return res.status(400).json({
+      success: false,
+      error: "Invalid or missing order status",
+      allowed_statuses: ORDER_STATUSES,
+    });
   }
 
   try {
-    const { data, error } = await supabaseAdmin
+    const { data: order, error } = await supabaseAdmin
       .from("orders")
       .update({ status })
       .eq("id", id)
-      .select()
-      .single();
+      .eq("restaurant_id", restaurantId)
+      .select("*, customers(*), order_items(*)")
+      .maybeSingle();
 
     if (error) throw error;
 
-    return res.json({ success: true, order: data });
-  } catch (error: any) {
-    return res.status(500).json({ success: false, error: error?.message });
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: "Order not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: order,
+    });
+  } catch (error: unknown) {
+    console.error("Error al actualizar la orden:", error);
+
+    return res.status(500).json({
+      success: false,
+      error: "Unable to update order",
+    });
   }
 });

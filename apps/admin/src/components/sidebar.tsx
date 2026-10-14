@@ -15,6 +15,7 @@ import {
   LogOut,
   Flame,
   X,
+  Armchair,
 } from "lucide-react";
 
 import { hasPermission, type AppRole, type Permission } from "@food360/types";
@@ -85,6 +86,12 @@ const navigation: NavSection[] = [
   {
     title: "ADMINISTRACIÓN",
     items: [
+      {
+        label: "Mesas",
+        href: "/tables",
+        icon: Armchair,
+        permission: "tables.view",
+      },
       {
         label: "Personal & Equipo",
         href: "/team",

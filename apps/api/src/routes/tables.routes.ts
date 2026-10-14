@@ -1,10 +1,13 @@
 import { Router, type Request, type Response } from "express";
-
 import { supabaseAdmin } from "@food360/database";
-
 import { requireRole } from "../../middleware.ts";
+import { randomBytes } from "crypto";
 
 export const tablesRouter: Router = Router();
+
+function generateTablePublicCode(): string {
+  return `t_${randomBytes(8).toString("base64url")}`;
+}
 
 tablesRouter.get("/", async (req: Request, res: Response) => {
   const restaurant_id = req.restaurantId;
@@ -56,6 +59,7 @@ tablesRouter.post(
         .insert({
           restaurant_id,
           table_number,
+          public_code: generateTablePublicCode(),
         })
         .select("*")
         .single();
@@ -66,12 +70,24 @@ tablesRouter.post(
         success: true,
         data: table,
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error creando mesa:", error);
+
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "23505"
+      ) {
+        return res.status(409).json({
+          success: false,
+          error: `Ya existe una mesa con el número ${table_number}.`,
+        });
+      }
 
       return res.status(500).json({
         success: false,
-        error: error?.message ?? "No se pudo crear la mesa",
+        error: "No se pudo crear la mesa.",
       });
     }
   },
@@ -115,6 +131,18 @@ tablesRouter.patch(
       });
     } catch (error: any) {
       console.error("Error actualizando mesa:", error);
+
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "23505"
+      ) {
+        return res.status(409).json({
+          success: false,
+          error: `Ya existe una mesa con el número ${table_number}.`,
+        });
+      }
 
       return res.status(500).json({
         success: false,
