@@ -4,6 +4,7 @@ export interface Table {
   id: UUID;
   restaurantId: UUID;
   tableNumber: number;
+  publicCode: string;
 }
 
 export interface CreateTableInput {

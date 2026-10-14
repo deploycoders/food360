@@ -1,17 +1,19 @@
 export type OrderStatus =
   | "all"
   | "pending"
+  | "confirmed"
   | "in_kitchen"
   | "ready"
-  | "delivered"
-  | "paid"
+  | "served"
+  | "completed"
   | "cancelled";
 
-export type OrderType = "dine_in" | "takeaway" | "delivery";
+export type OrderType = "dine_in" | "takeaway" | "delivery" | "other";
 
 export interface OrderItem {
   id: string;
-  name: string; // <-- Asegúrate de que esta línea exista
+  productId: string | null;
+  name: string;
   qty: number;
   unitPrice: number;
   notes?: string;
@@ -19,17 +21,13 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
-  code: string; // ej: #F360-101
-  createdAt: string; // ej: 2026-08-24 14:32
+  code: string;
+  createdAt: string;
   type: OrderType;
-  tableOrDestination: string; // ej: Mesa 04 (Salón) o Para Llevar
+  tableOrDestination: string;
   customerName: string;
   customerPhone?: string;
   items: OrderItem[];
-  subtotal: number;
-  tax: number;
   total: number;
-  status: OrderStatus;
-  paymentStatus: "paid" | "pending" | "refunded";
-  paymentMethod?: "Efectivo" | "Tarjeta" | "Transferencia" | "Zelle";
+  status: Exclude<OrderStatus, "all">;
 }

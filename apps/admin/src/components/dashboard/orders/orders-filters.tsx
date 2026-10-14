@@ -1,27 +1,30 @@
 "use client";
 
 import React from "react";
-import { Search, Calendar } from "lucide-react";
-import { OrderStatus } from "@/types/order";
+import { Search } from "lucide-react";
+import type { OrderStatus } from "@/types/order";
+import { OrdersDatePicker } from "./date-picker";
 
 interface OrdersFiltersProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   selectedStatus: OrderStatus;
   onStatusChange: (status: OrderStatus) => void;
-  selectedDate: string;
-  onDateChange: (date: string) => void;
-  statusCounts: Record<OrderStatus, number>;
+  startDate: string;
+  endDate: string;
+  onDateRangeChange: (range: { startDate: string; endDate: string }) => void;
+  statusCounts: Partial<Record<OrderStatus, number>>;
 }
 
 const TABS: { id: OrderStatus; label: string }[] = [
   { id: "all", label: "Todas" },
   { id: "pending", label: "Pendientes" },
-  { id: "in_kitchen", label: "En Cocina" },
-  { id: "ready", label: "Listos" },
-  { id: "delivered", label: "Entregados" },
-  { id: "paid", label: "Pagados" },
-  { id: "cancelled", label: "Cancelados" },
+  { id: "confirmed", label: "Confirmadas" },
+  { id: "in_kitchen", label: "En preparación" },
+  { id: "ready", label: "Listas" },
+  { id: "served", label: "Entregadas" },
+  { id: "completed", label: "Completadas" },
+  { id: "cancelled", label: "Canceladas" },
 ];
 
 export function OrdersFilters({
@@ -29,67 +32,74 @@ export function OrdersFilters({
   onSearchChange,
   selectedStatus,
   onStatusChange,
-  selectedDate,
-  onDateChange,
+  startDate,
+  endDate,
+  onDateRangeChange,
   statusCounts,
 }: OrdersFiltersProps) {
   return (
-    <div className="space-y-4">
-      {/* Pestañas de Estado */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1.5 border-b border-border scrollbar-none">
-        {TABS.map((tab) => {
-          const count = statusCounts[tab.id] || 0;
-          const isActive = selectedStatus === tab.id;
+    <section className="space-y-4">
+      {/* Filtros por estado */}
+      <div className="-mx-1 overflow-x-auto px-1 pb-2">
+        <div className="flex w-max min-w-full items-center gap-1.5">
+          {TABS.map((tab) => {
+            const isActive = selectedStatus === tab.id;
+            const count = statusCounts[tab.id] ?? 0;
 
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => onStatusChange(tab.id)}
-              className={`px-3 py-2 rounded-lg cursor-pointer text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
-                isActive
-                  ? "bg-accent/15 text-accent border border-accent/30"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
-            >
-              <span>{tab.label}</span>
-              <span
-                className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onStatusChange(tab.id)}
+                aria-pressed={isActive}
+                className={`inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
                   isActive
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-muted text-muted-foreground"
+                    ? "border-accent/30 bg-accent/10 text-accent"
+                    : "border-transparent text-muted-foreground hover:border-border hover:bg-muted/60 hover:text-foreground"
                 }`}
               >
-                {count}
-              </span>
-            </button>
-          );
-        })}
+                <span>{tab.label}</span>
+
+                <span
+                  className={`min-w-5 rounded-md px-1.5 py-0.5 text-center font-mono text-[10px] ${
+                    isActive
+                      ? "bg-accent text-accent-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Buscador y Filtro por Fecha */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+      {/* Búsqueda y rango de fechas */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <label className="relative block w-full sm:max-w-sm">
+          <Search
+            aria-hidden="true"
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          />
+
           <input
-            type="text"
-            placeholder="Buscar por # comanda, cliente..."
+            type="search"
+            placeholder="Buscar por referencia o cliente..."
             value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full bg-card border border-border rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition-all"
+            onChange={(event) => onSearchChange(event.target.value)}
+            className="h-11 w-full rounded-xl border border-border bg-card pl-10 pr-4 text-sm text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
           />
-        </div>
+        </label>
 
-        <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5 text-xs text-foreground w-full sm:w-auto justify-between sm:justify-start">
-          <Calendar className="w-4 h-4 text-muted-foreground" />
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => onDateChange(e.target.value)}
-            className="bg-transparent text-foreground focus:outline-none text-xs"
+        <div className="w-full sm:w-auto">
+          <OrdersDatePicker
+            startDate={startDate}
+            endDate={endDate}
+            onChange={onDateRangeChange}
           />
         </div>
       </div>
-    </div>
+    </section>
   );
 }
