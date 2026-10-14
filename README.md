@@ -16,6 +16,12 @@ pnpm dev
 - `apps/client`: public WebAR menu and QR Hub on port 3000.
 - `apps/admin`: admin dashboard, KDS, and Kanban workflows on port 3001.
 - `apps/api`: central backend API on port 3002.
+- `apps/linktree`: digital restaurant hub and ordering flow on port 3003.
+
+`apps/linktree` sends orders to `apps/api` when `NEXT_PUBLIC_API_URL` and
+`NEXT_PUBLIC_RESTAURANT_ID` are configured. Copy
+`apps/linktree/.env.example` to `apps/linktree/.env.local` for local API
+integration; without those values the menu remains usable in local mode.
 
 ## Packages
 
