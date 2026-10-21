@@ -5,6 +5,10 @@ import { requireRole } from "../../middleware";
 
 export const reservationsRouter: Router = Router();
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 reservationsRouter.get("/", async (req: Request, res: Response) => {
   const restaurant_id = req.restaurantId;
 
@@ -21,12 +25,12 @@ reservationsRouter.get("/", async (req: Request, res: Response) => {
       success: true,
       data: reservations,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error obteniendo reservas:", error);
 
     return res.status(500).json({
       success: false,
-      error: error?.message ?? "No se pudieron obtener las reservas",
+      error: getErrorMessage(error, "No se pudieron obtener las reservas"),
     });
   }
 });
@@ -56,12 +60,12 @@ reservationsRouter.get("/:id", async (req: Request, res: Response) => {
       success: true,
       data: reservation,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error obteniendo reserva:", error);
 
     return res.status(500).json({
       success: false,
-      error: error?.message ?? "No se pudo obtener la reserva",
+      error: getErrorMessage(error, "No se pudo obtener la reserva"),
     });
   }
 });
@@ -112,12 +116,12 @@ reservationsRouter.post(
         success: true,
         data: reservation,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creando reserva:", error);
 
       return res.status(500).json({
         success: false,
-        error: error?.message ?? "No se pudo crear la reserva",
+        error: getErrorMessage(error, "No se pudo crear la reserva"),
       });
     }
   },
@@ -172,12 +176,12 @@ reservationsRouter.post(
         success: true,
         data: updatedReservation,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error marcando llegada de reserva:", error);
 
       return res.status(500).json({
         success: false,
-        error: error?.message ?? "No se pudo marcar la llegada de la reserva",
+        error: getErrorMessage(error, "No se pudo marcar la llegada de la reserva"),
       });
     }
   },
@@ -232,12 +236,12 @@ reservationsRouter.post(
         success: true,
         data: updatedReservation,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error sentando reserva:", error);
 
       return res.status(500).json({
         success: false,
-        error: error?.message ?? "No se pudo sentar la reserva",
+        error: getErrorMessage(error, "No se pudo sentar la reserva"),
       });
     }
   },
@@ -293,12 +297,12 @@ reservationsRouter.post(
         success: true,
         data: updatedReservation,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error confirmando reserva:", error);
 
       return res.status(500).json({
         success: false,
-        error: error?.message ?? "No se pudo confirmar la reserva",
+        error: getErrorMessage(error, "No se pudo confirmar la reserva"),
       });
     }
   },
@@ -352,12 +356,12 @@ reservationsRouter.post(
         success: true,
         data: updatedReservation,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error completando reserva:", error);
 
       return res.status(500).json({
         success: false,
-        error: error?.message ?? "No se pudo completar la reserva",
+        error: getErrorMessage(error, "No se pudo completar la reserva"),
       });
     }
   },
@@ -413,12 +417,12 @@ reservationsRouter.post(
         success: true,
         data: updatedReservation,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error cancelando reserva:", error);
 
       return res.status(500).json({
         success: false,
-        error: error?.message ?? "No se pudo cancelar la reserva",
+        error: getErrorMessage(error, "No se pudo cancelar la reserva"),
       });
     }
   },
@@ -474,12 +478,12 @@ reservationsRouter.post(
         success: true,
         data: updatedReservation,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error marcando reserva como no-show:", error);
 
       return res.status(500).json({
         success: false,
-        error: error?.message ?? "No se pudo marcar la reserva como no-show",
+        error: getErrorMessage(error, "No se pudo marcar la reserva como no-show"),
       });
     }
   },
@@ -559,12 +563,12 @@ reservationsRouter.patch(
         success: true,
         data: reservation,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error actualizando reserva:", error);
 
       return res.status(500).json({
         success: false,
-        error: error?.message ?? "No se pudo actualizar la reserva",
+        error: getErrorMessage(error, "No se pudo actualizar la reserva"),
       });
     }
   },

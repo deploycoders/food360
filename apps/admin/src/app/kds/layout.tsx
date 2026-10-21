@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   ChefHat,
@@ -23,6 +23,9 @@ export default function KDSLayout({ children }: { children: React.ReactNode }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const station = "Cocina General & Brasas";
   const { logout } = useLogout();
+  const [audioReady, setAudioReady] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playedOrderIdsRef = useRef<Set<string>>(new Set());
 
   const { role } = useRestaurant();
 
@@ -45,6 +48,85 @@ export default function KDSLayout({ children }: { children: React.ReactNode }) {
 
     await logout();
   };
+
+  useEffect(() => {
+    const audio = new Audio("/notifications/kds-sound-notification.mp3");
+    audio.preload = "auto";
+    audio.volume = 1;
+    audioRef.current = audio;
+
+    return () => {
+      audio.pause();
+      audioRef.current = null;
+    };
+  }, []);
+
+  const enableAudio = async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    try {
+      // Desbloquea la reproducción mediante la interacción del usuario
+      // sin reproducir el sonido de alerta durante la activación.
+      const previousVolume = audio.volume;
+      audio.volume = 0;
+
+      await audio.play();
+      audio.pause();
+      audio.currentTime = 0;
+      audio.volume = previousVolume;
+
+      setAudioReady(true);
+    } catch (error) {
+      console.warn("[KDS Audio] No se pudo habilitar el audio:", error);
+    }
+  };
+
+  const handleSoundToggle = async () => {
+    if (!soundEnabled) {
+      setSoundEnabled(true);
+      await enableAudio();
+      return;
+    }
+
+    if (!audioReady) {
+      await enableAudio();
+      return;
+    }
+
+    setSoundEnabled(false);
+  };
+
+  useEffect(() => {
+    const handleNewOrder = (event: Event) => {
+      if (!soundEnabled || !audioReady) return;
+
+      const customEvent = event as CustomEvent<{ orderId?: string }>;
+      const orderId = customEvent.detail?.orderId;
+
+      if (!orderId) return;
+
+      // Evita reproducir dos veces la alerta para la misma orden.
+      if (playedOrderIdsRef.current.has(orderId)) return;
+
+      playedOrderIdsRef.current.add(orderId);
+
+      const audio = audioRef.current;
+      if (!audio) return;
+
+      audio.currentTime = 0;
+
+      void audio.play().catch((error) => {
+        console.warn("[KDS Audio] No se pudo reproducir la alerta:", error);
+      });
+    };
+
+    window.addEventListener("food360:kds-new-order", handleNewOrder);
+
+    return () => {
+      window.removeEventListener("food360:kds-new-order", handleNewOrder);
+    };
+  }, [soundEnabled, audioReady]);
 
   useEffect(() => {
     const updateTime = () => {
@@ -118,13 +200,19 @@ export default function KDSLayout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <button
             type="button"
-            onClick={() => setSoundEnabled(!soundEnabled)}
+            onClick={handleSoundToggle}
             className={`p-2 sm:px-3 sm:py-1.5 rounded-lg border text-xs font-semibold transition-colors flex items-center gap-1.5 ${
               soundEnabled
                 ? "bg-muted border-border text-foreground"
                 : "bg-destructive/10 border-destructive/30 text-destructive"
             }`}
-            title={soundEnabled ? "Audio Activo" : "Silenciado"}
+            title={
+              !soundEnabled
+                ? "Audio silenciado"
+                : !audioReady
+                  ? "Pulsa para habilitar el audio"
+                  : "Audio activo"
+            }
           >
             {soundEnabled ? (
               <Volume2 className="w-4 h-4 text-accent shrink-0" />

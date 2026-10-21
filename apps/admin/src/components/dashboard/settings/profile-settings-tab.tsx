@@ -52,7 +52,7 @@ export function ProfileSettingsTab({
                 type="text"
                 value={data.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
-                className="w-full rounded-xl border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent focus:bg-card focus:outline-none transition-all"
+                className="w-full rounded-lg border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent focus:bg-card focus:outline-none transition-all"
                 placeholder="Ej. Food360 Grill & Bar"
               />
             </div>
@@ -67,7 +67,7 @@ export function ProfileSettingsTab({
               type="text"
               value={data.legalName}
               onChange={(e) => handleInputChange("legalName", e.target.value)}
-              className="w-full rounded-xl border border-border bg-muted/20 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent focus:bg-card focus:outline-none transition-all"
+              className="w-full rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent focus:bg-card focus:outline-none transition-all"
               placeholder="Ej. Food360 Hospitality S.L."
             />
           </div>
@@ -83,7 +83,7 @@ export function ProfileSettingsTab({
                 type="text"
                 value={data.phone}
                 onChange={(e) => handleInputChange("phone", e.target.value)}
-                className="w-full rounded-xl border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent focus:bg-card focus:outline-none transition-all"
+                className="w-full rounded-lg border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent focus:bg-card focus:outline-none transition-all"
                 placeholder="+34 912 345 678"
               />
             </div>
@@ -100,7 +100,7 @@ export function ProfileSettingsTab({
                 type="email"
                 value={data.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
-                className="w-full rounded-xl border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent focus:bg-card focus:outline-none transition-all"
+                className="w-full rounded-lg border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent focus:bg-card focus:outline-none transition-all"
                 placeholder="contacto@food360.com"
               />
             </div>
@@ -117,7 +117,7 @@ export function ProfileSettingsTab({
                 type="text"
                 value={data.address}
                 onChange={(e) => handleInputChange("address", e.target.value)}
-                className="w-full rounded-xl border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent focus:bg-card focus:outline-none transition-all"
+                className="w-full rounded-lg border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent focus:bg-card focus:outline-none transition-all"
                 placeholder="Calle Gran Vía 42, 28013 Madrid"
               />
             </div>
@@ -126,7 +126,7 @@ export function ProfileSettingsTab({
       </div>
 
       {/* Sección: Configuración Regional y Fiscal */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
+      <div className="rounded-2lg border border-border bg-card p-6 shadow-xs">
         <h2 className="text-sm font-bold text-foreground tracking-tight">
           Configuración Regional y Fiscal
         </h2>
@@ -145,7 +145,7 @@ export function ProfileSettingsTab({
               <select
                 value={data.currency}
                 onChange={(e) => handleInputChange("currency", e.target.value)}
-                className="w-full appearance-none rounded-xl border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground focus:border-accent focus:bg-card focus:outline-none transition-all cursor-pointer"
+                className="w-full appearance-none rounded-lg border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground focus:border-accent focus:bg-card focus:outline-none transition-all cursor-pointer"
               >
                 <option value="EUR">EUR (€) - Euro</option>
                 <option value="USD">USD ($) - Dólar Estadounidense</option>
@@ -171,7 +171,7 @@ export function ProfileSettingsTab({
                 onChange={(e) =>
                   handleInputChange("taxRate", Number(e.target.value))
                 }
-                className="w-full rounded-xl border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground focus:border-accent focus:bg-card focus:outline-none transition-all"
+                className="w-full rounded-lg border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground focus:border-accent focus:bg-card focus:outline-none transition-all"
               />
             </div>
           </div>
@@ -186,7 +186,7 @@ export function ProfileSettingsTab({
               <select
                 value={data.timezone}
                 onChange={(e) => handleInputChange("timezone", e.target.value)}
-                className="w-full appearance-none rounded-xl border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground focus:border-accent focus:bg-card focus:outline-none transition-all cursor-pointer"
+                className="w-full appearance-none rounded-lg border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground focus:border-accent focus:bg-card focus:outline-none transition-all cursor-pointer"
               >
                 <option value="Europe/Madrid">Europe/Madrid (UTC+1)</option>
                 <option value="America/Caracas">America/Caracas (UTC-4)</option>

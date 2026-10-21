@@ -3,12 +3,11 @@
   "extends": "@repo/typescript-config/nextjs.json",
   "compilerOptions": {
     "outDir": "dist",
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "strictNullChecks": true
   },
-  "include": ["src", "next.config.ts", "next-env.d.ts", ".next/types/**/*.ts"]
+  "include": ["src", "next.config.ts", "next-env.d.ts", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"]
 }

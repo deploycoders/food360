@@ -46,8 +46,9 @@ async function apiRequest<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const token = await getAccessToken();
+  const url = `${API_URL}${endpoint}`;
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const response = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -56,23 +57,43 @@ async function apiRequest<T>(
     },
   });
 
-  const body = (await response.json()) as ApiResponse<T>;
+  const responseText = await response.text();
+
+  let body: ApiResponse<T>;
+
+  try {
+    body = JSON.parse(responseText) as ApiResponse<T>;
+  } catch {
+    const preview = responseText.trim().slice(0, 160);
+
+    throw new Error(
+      `La API devolvió una respuesta que no es JSON. ` +
+        `HTTP ${response.status} en ${endpoint}. ` +
+        `URL: ${url}. Respuesta: ${preview}`,
+    );
+  }
 
   if (!response.ok) {
-    throw new Error(body.error ?? "Ocurrió un error al comunicarse con la API");
+    throw new Error(
+      body.error ?? `Error HTTP ${response.status} al consultar ${endpoint}`,
+    );
+  }
+
+  if (body.success === false) {
+    throw new Error(body.error ?? "La API rechazó la solicitud");
   }
 
   return body.data;
 }
 
 export async function getTables(): Promise<Table[]> {
-  const data = await apiRequest<ApiTable[]>("/api/v1/tables");
+  const data = await apiRequest<ApiTable[]>("/tables");
 
   return data.map(mapTable);
 }
 
 export async function createTable(input: CreateTableInput): Promise<Table> {
-  const data = await apiRequest<ApiTable>("/api/v1/tables", {
+  const data = await apiRequest<ApiTable>("/tables", {
     method: "POST",
     body: JSON.stringify({
       table_number: input.tableNumber,
@@ -86,7 +107,7 @@ export async function updateTable(
   tableId: string,
   input: UpdateTableInput,
 ): Promise<Table> {
-  const data = await apiRequest<ApiTable>(`/api/v1/tables/${tableId}`, {
+  const data = await apiRequest<ApiTable>(`/tables/${tableId}`, {
     method: "PATCH",
     body: JSON.stringify({
       table_number: input.tableNumber,
@@ -97,7 +118,7 @@ export async function updateTable(
 }
 
 export async function deleteTable(tableId: string): Promise<void> {
-  await apiRequest(`/api/v1/tables/${tableId}`, {
+  await apiRequest<unknown>(`/tables/${tableId}`, {
     method: "DELETE",
   });
 }

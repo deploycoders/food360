@@ -1,5 +1,11 @@
 import { apiFetch } from "@/lib/api-client";
-import type { ApiOrder, ApiResponse, ApiOrderStatus } from "@/types/order-api";
+import type {
+  ApiOrder,
+  ApiResponse,
+  ApiOrderStatus,
+  CreateOrderInput,
+  CreateOrderResult,
+} from "@/types/order-api";
 
 export const ordersService = {
   async getOrders(): Promise<ApiOrder[]> {
@@ -25,5 +31,12 @@ export const ordersService = {
     );
 
     return response.data;
+  },
+
+  async createOrder(payload: CreateOrderInput): Promise<CreateOrderResult> {
+    return apiFetch<CreateOrderResult>("/orders", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
 };

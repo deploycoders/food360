@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { Building2, Clock, QrCode, Sparkles, LucideIcon } from "lucide-react";
+import { Building2, Clock, type LucideIcon } from "lucide-react";
 
-export type SettingsTabType = "profile" | "qr" | "ai" | "schedule";
+export type SettingsTabType = "profile" | "schedule";
 
 interface SettingsTabsProps {
   activeTab: SettingsTabType;
@@ -16,14 +16,12 @@ interface TabItem {
   icon: LucideIcon;
 }
 
-export function SettingsTabs({ activeTab, onTabChange }: SettingsTabsProps) {
-  const tabs: TabItem[] = [
-    { id: "profile", label: "Perfil & Local", icon: Building2 },
-    { id: "qr", label: "Códigos QR & Mesas", icon: QrCode },
-    { id: "ai", label: "IA & Integraciones", icon: Sparkles },
-    { id: "schedule", label: "Horarios & Operación", icon: Clock },
-  ];
+const tabs: TabItem[] = [
+  { id: "profile", label: "Perfil & Local", icon: Building2 },
+  { id: "schedule", label: "Horarios & Operación", icon: Clock },
+];
 
+export function SettingsTabs({ activeTab, onTabChange }: SettingsTabsProps) {
   return (
     <div className="flex items-center gap-1 border-b border-border/60 pb-px">
       {tabs.map((tab) => {
@@ -33,6 +31,7 @@ export function SettingsTabs({ activeTab, onTabChange }: SettingsTabsProps) {
         return (
           <button
             key={tab.id}
+            type="button"
             onClick={() => onTabChange(tab.id)}
             className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-semibold transition-all cursor-pointer ${
               isActive
@@ -41,7 +40,9 @@ export function SettingsTabs({ activeTab, onTabChange }: SettingsTabsProps) {
             }`}
           >
             <Icon
-              className={`h-4 w-4 ${isActive ? "text-accent" : "text-muted-foreground"}`}
+              className={`h-4 w-4 ${
+                isActive ? "text-accent" : "text-muted-foreground"
+              }`}
             />
             <span>{tab.label}</span>
           </button>

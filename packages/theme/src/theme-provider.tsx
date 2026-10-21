@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ThemeContext, type Theme } from "./theme-context";
 
 const STORAGE_KEY = "food360-theme";
@@ -21,7 +21,7 @@ function applyTheme(effectiveTheme: "dark" | "light") {
   root.classList.toggle("dark", effectiveTheme === "dark");
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("light");
 
   const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("light");
@@ -31,8 +31,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const savedTheme = (localStorage.getItem(STORAGE_KEY) as Theme) || "light";
 
-    setThemeState(savedTheme);
-    setMounted(true);
+    queueMicrotask(() => {
+      setThemeState(savedTheme);
+      setMounted(true);
+    });
   }, []);
 
   useEffect(() => {
@@ -40,7 +42,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const effectiveTheme = resolveTheme(theme);
 
-    setResolvedTheme(effectiveTheme);
+    queueMicrotask(() => {
+      setResolvedTheme(effectiveTheme);
+    });
     applyTheme(effectiveTheme);
 
     localStorage.setItem(STORAGE_KEY, theme);

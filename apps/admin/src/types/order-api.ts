@@ -55,3 +55,22 @@ export interface CreateOrderPayload {
 export interface UpdateOrderStatusPayload {
   status: ApiOrderStatus;
 }
+
+export interface CreateOrderItemInput {
+  product_id: string;
+  quantity: number;
+}
+
+export interface CreateOrderInput {
+  phone: string;
+  full_name: string;
+  origin: string;
+  items: CreateOrderItemInput[];
+  table_id: string | null;
+}
+
+export interface CreateOrderResult {
+  success: boolean;
+  order_id: string;
+  total_amount: number;
+}

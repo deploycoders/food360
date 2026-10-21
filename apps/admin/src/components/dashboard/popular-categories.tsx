@@ -1,49 +1,57 @@
-import React from "react";
-import { AlertCircle } from "lucide-react";
+import type { DashboardPopularItem } from "@/types/dashboard";
 
-const categories = [
-  { name: "Hamburguesas Gourmet", count: "18 pedidos", pct: "75%" },
-  { name: "Pizzas Artesanales", count: "12 pedidos", pct: "50%" },
-  { name: "Bebidas & Cócteles", count: "8 pedidos", pct: "30%" },
-  { name: "Postres & Cafés", count: "4 pedidos", pct: "15%" },
-];
+interface PopularCategoriesProps {
+  products: DashboardPopularItem[];
+  categories: DashboardPopularItem[];
+  currency: string;
+}
 
-export function PopularCategories() {
-  return (
-    <div className="p-5 rounded-xl bg-card border border-border flex flex-col justify-between h-full">
-      <div>
-        <h2 className="text-sm font-bold text-foreground">
-          Categorías Populares
-        </h2>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Productos con mayor rotación
-        </p>
+function formatCurrency(value: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat("es", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return `${value.toFixed(2)} ${currency}`;
+  }
+}
 
-        <div className="mt-5 space-y-3.5">
-          {categories.map((cat) => (
-            <div key={cat.name} className="space-y-1.5">
-              <div className="flex justify-between text-xs font-medium">
-                <span className="text-foreground">{cat.name}</span>
-                <span className="text-muted-foreground">{cat.count}</span>
+export function PopularCategories({ products, categories, currency }: PopularCategoriesProps) {
+  const renderItems = (items: DashboardPopularItem[], title: string, empty: string) => (
+    <section>
+      <h4 className="mb-3 text-xs font-semibold text-foreground">{title}</h4>
+      {items.length ? (
+        <div className="space-y-3">
+          {items.map((item, index) => (
+            <div key={item.id} className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-muted text-[10px] font-bold text-muted-foreground">
+                  {index + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-medium text-foreground">{item.name}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">{item.quantity} unidades</p>
+                </div>
               </div>
-              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-accent rounded-full"
-                  style={{ width: cat.pct }}
-                />
-              </div>
+              <span className="shrink-0 text-xs font-medium text-foreground">
+                {formatCurrency(item.revenue, currency)}
+              </span>
             </div>
           ))}
         </div>
-      </div>
+      ) : <p className="text-xs text-muted-foreground">{empty}</p>}
+    </section>
+  );
 
-      <div className="mt-6 pt-4 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-        <span>Alertas de Insumos:</span>
-        <span className="text-foreground font-medium flex items-center gap-1.5">
-          <AlertCircle className="w-3.5 h-3.5 text-warning" /> 2 platillos
-          limitados
-        </span>
-      </div>
+  return (
+    <div className="grid gap-6 sm:grid-cols-2">
+      {renderItems(products, "Productos más vendidos", "Sin ventas registradas.")}
+      {renderItems(categories, "Categorías populares", "Sin categorías con ventas.")}
+      <p className="text-[11px] text-muted-foreground sm:col-span-2">
+        Datos de pedidos completados de los últimos 30 días.
+      </p>
     </div>
   );
 }

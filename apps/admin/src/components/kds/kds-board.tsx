@@ -1,225 +1,192 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   DragDropContext,
   Droppable,
   Draggable,
-  DropResult,
+  type DropResult,
 } from "@hello-pangea/dnd";
-import { Order, OrderCard } from "./order-card";
-import { Clock, Flame, CheckCircle2, History } from "lucide-react";
-import { AnimatePresence } from "framer-motion";
+import { CheckCircle2, Clock, Flame, History, RefreshCw } from "lucide-react";
 
-const INITIAL_ORDERS: Order[] = [
-  {
-    id: "ord-101",
-    number: "#101",
-    table: "Mesa 04 (Salón)",
-    timeElapsed: 3,
-    allergyNote: "¡Alergia severa a frutos secos!",
-    status: "pending",
-    items: [
-      {
-        id: "i1",
-        name: "Hamburguesa Trufada Angus",
-        qty: 2,
-        notes: "Término medio, papas bien crujientes",
-      },
-      { id: "i2", name: "Cerveza Artesanal IPA", qty: 2 },
-    ],
-  },
-  {
-    id: "ord-102",
-    number: "#102",
-    table: "Mesa 08 (Terraza)",
-    timeElapsed: 14,
-    status: "in_prep",
-    items: [
-      {
-        id: "i3",
-        name: "Pizza Napolitana Burrata",
-        qty: 1,
-        notes: "Masa fina",
-      },
-      {
-        id: "i4",
-        name: "Costillas BBQ Ahumadas",
-        qty: 1,
-        notes: "Salsa aparte",
-      },
-    ],
-  },
-  {
-    id: "ord-100",
-    number: "#100",
-    table: "Mesa 02 (Salón)",
-    timeElapsed: 22,
-    status: "in_prep",
-    items: [
-      {
-        id: "i5",
-        name: "Smash Cheeseburger Doble",
-        qty: 2,
-        notes: "Sin cebolla",
-      },
-      { id: "i6", name: "Aros de Cebolla Crunch", qty: 1 },
-    ],
-  },
-  {
-    id: "ord-099",
-    number: "#099",
-    table: "Para Llevar / Delivery",
-    timeElapsed: 18,
-    status: "ready",
-    items: [
-      {
-        id: "i7",
-        name: "Poke Bowl Salmón Fresco",
-        qty: 1,
-        notes: "Sin sésamo",
-      },
-    ],
-  },
-];
+import { OrderCard } from "./order-card";
+import type { KDSColumnStatus } from "@/types/kds";
+import { useKDSOrders } from "@/lib/hooks/use-kds-orders";
 
-const COLUMNS = [
+const COLUMNS: {
+  id: KDSColumnStatus;
+  title: string;
+  icon: typeof Clock;
+}[] = [
   { id: "pending", title: "1. Pendientes", icon: Clock },
-  { id: "in_prep", title: "2. En Preparación", icon: Flame },
+  { id: "in_kitchen", title: "2. En Preparación", icon: Flame },
   { id: "ready", title: "3. Listos para Servir", icon: CheckCircle2 },
 ];
 
 export function KDSBoard() {
-  const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
-  const [deliveredCount, setDeliveredCount] = useState(0);
+  const {
+    orders,
+    deliveredCount,
+    loading,
+    error,
+    updatingIds,
+    refresh,
+    advanceOrder,
+    regressOrder,
+    moveOrder,
+  } = useKDSOrders();
 
   const handleDragEnd = (result: DropResult) => {
     const { destination, draggableId } = result;
-    if (!destination) return;
 
-    const targetStatus = destination.droppableId as Order["status"];
-    setOrders((prev) =>
-      prev.map((ord) =>
-        ord.id === draggableId ? { ...ord, status: targetStatus } : ord,
-      ),
+    if (!destination || destination.droppableId === result.source.droppableId) {
+      return;
+    }
+
+    const isValidColumn = COLUMNS.some(
+      (column) => column.id === destination.droppableId,
     );
+
+    if (!isValidColumn) return;
+
+    void moveOrder(draggableId, destination.droppableId as KDSColumnStatus);
   };
 
-  const advanceStatus = (id: string) => {
-    const targetOrder = orders.find((o) => o.id === id);
-    if (!targetOrder) return;
-
-    if (targetOrder.status === "pending") {
-      setOrders((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, status: "in_prep" } : o)),
-      );
-    } else if (targetOrder.status === "in_prep") {
-      setOrders((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, status: "ready" } : o)),
-      );
-    } else if (targetOrder.status === "ready") {
-      // Al entregar, la quitamos de la pantalla activa
-      setOrders((prev) => prev.filter((o) => o.id !== id));
-      setDeliveredCount((prev) => prev + 1);
-    }
-  };
-
-  const regressStatus = (id: string) => {
-    const targetOrder = orders.find((o) => o.id === id);
-    if (!targetOrder) return;
-
-    if (targetOrder.status === "ready") {
-      setOrders((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, status: "in_prep" } : o)),
-      );
-    } else if (targetOrder.status === "in_prep") {
-      setOrders((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, status: "pending" } : o)),
-      );
-    }
-  };
+  if (loading && orders.length === 0) {
+    return (
+      <div className="flex h-full min-h-60 items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <RefreshCw className="h-6 w-6 animate-spin" />
+          <p className="text-sm">Cargando comandas...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-full flex flex-col space-y-3">
-      {/* Barra superior secundaria con contador de Entregados */}
-      <div className="flex items-center justify-between px-1">
-        <span className="text-xs text-muted-foreground font-medium">
+    <div className="flex h-full min-h-0 flex-col gap-3">
+      {/* Barra superior */}
+      <div className="flex items-center justify-between gap-3 px-1">
+        <span className="text-xs font-medium text-muted-foreground">
           Comandas activas:{" "}
           <strong className="text-foreground">{orders.length}</strong>
         </span>
 
-        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-card border border-border px-3 py-1 rounded-lg">
-          <History className="w-3.5 h-3.5 text-success" />
-          <span>
-            Entregados hoy:{" "}
-            <strong className="text-success">{deliveredCount}</strong>
-          </span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
+            <History className="h-3.5 w-3.5 text-success" />
+            <span>
+              Entregados:{" "}
+              <strong className="text-success">{deliveredCount}</strong>
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            disabled={loading}
+            aria-label="Actualizar comandas"
+            title="Actualizar comandas"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+            />
+          </button>
         </div>
       </div>
 
-      {/* Grid de 3 Columnas adaptativo */}
+      {/* Errores */}
+      {error && (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+        >
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className="shrink-0 font-semibold underline underline-offset-2"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      {/* Columnas */}
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex-1 flex md:grid md:grid-cols-3 gap-4 overflow-x-auto overflow-y-hidden pb-2 snap-x">
-          {COLUMNS.map((col) => {
-            const colOrders = orders.filter((o) => o.status === col.id);
-            const Icon = col.icon;
+        <div className="flex min-h-0 flex-1 snap-x gap-4 overflow-x-auto overflow-y-hidden pb-2 md:grid md:grid-cols-3">
+          {COLUMNS.map((column) => {
+            const Icon = column.icon;
+
+            const columnOrders = orders.filter((order) =>
+              column.id === "pending"
+                ? order.status === "pending" || order.status === "confirmed"
+                : order.status === column.id,
+            );
 
             return (
-              <div
-                key={col.id}
-                className="min-w-75 md:min-w-0 flex-1 bg-card/40 border border-border rounded-2xl flex flex-col h-full overflow-hidden snap-center"
+              <section
+                key={column.id}
+                className="flex h-full min-h-0 min-w-75 flex-1 snap-center flex-col overflow-hidden rounded-2xl border border-border bg-card/40 md:min-w-0"
               >
-                {/* Cabecera Columna */}
-                <div className="p-3.5 bg-card border-b border-border flex items-center justify-between shrink-0">
+                <header className="flex shrink-0 items-center justify-between border-b border-border bg-card p-3.5">
                   <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4 text-accent" />
+                    <Icon className="h-4 w-4 text-accent" />
                     <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                      {col.title}
+                      {column.title}
                     </h2>
                   </div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-muted border border-border text-xs font-extrabold text-foreground">
-                    {colOrders.length}
-                  </span>
-                </div>
 
-                {/* Zona Droppable de Tarjetas */}
-                <Droppable droppableId={col.id}>
+                  <span className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-extrabold text-foreground">
+                    {columnOrders.length}
+                  </span>
+                </header>
+
+                <Droppable droppableId={column.id}>
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`flex-1 p-3 space-y-3 overflow-y-auto transition-colors ${
+                      className={`min-h-0 flex-1 space-y-3 overflow-y-auto p-3 transition-colors ${
                         snapshot.isDraggingOver ? "bg-accent/5" : ""
                       }`}
                     >
-                      <AnimatePresence>
-                        {colOrders.map((order, index) => (
-                          <Draggable
-                            key={order.id}
-                            draggableId={order.id}
-                            index={index}
-                          >
-                            {(dragProvided) => (
-                              <div
-                                ref={dragProvided.innerRef}
-                                {...dragProvided.draggableProps}
-                                {...dragProvided.dragHandleProps}
-                              >
-                                <OrderCard
-                                  order={order}
-                                  onAdvanceStatus={advanceStatus}
-                                  onRegressStatus={regressStatus}
-                                />
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
-                      </AnimatePresence>
+                      {columnOrders.map((order, index) => (
+                        <Draggable
+                          key={order.id}
+                          draggableId={order.id}
+                          index={index}
+                          isDragDisabled={updatingIds.has(order.id)}
+                        >
+                          {(dragProvided) => (
+                            <div
+                              ref={dragProvided.innerRef}
+                              {...dragProvided.draggableProps}
+                              {...dragProvided.dragHandleProps}
+                            >
+                              <OrderCard
+                                order={order}
+                                isUpdating={updatingIds.has(order.id)}
+                                onAdvanceStatus={advanceOrder}
+                                onRegressStatus={regressOrder}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+
                       {provided.placeholder}
+
+                      {columnOrders.length === 0 && (
+                        <div className="rounded-xl border border-dashed border-border px-3 py-8 text-center text-xs text-muted-foreground">
+                          No hay comandas en esta columna.
+                        </div>
+                      )}
                     </div>
                   )}
                 </Droppable>
-              </div>
+              </section>
             );
           })}
         </div>

@@ -1,5 +1,11 @@
-import { createClient } from "@/lib/supabase/client";
+import { apiFetch } from "@/lib/api-client";
 import type { Product } from "@/types/menu";
+
+type ApiResponse<T> = {
+  success: boolean;
+  data: T;
+  error?: string;
+};
 
 type ProductRow = {
   id: string;
@@ -18,13 +24,6 @@ type ProductRow = {
   deactivation_reason: string | null;
   created_at: string | null;
   updated_at: string | null;
-};
-type ActiveProductRow = ProductRow & {
-  category: {
-    id: string;
-    name: string;
-    is_active: boolean;
-  };
 };
 
 export function mapProduct(row: ProductRow): Product {
@@ -54,55 +53,23 @@ export function mapProduct(row: ProductRow): Product {
   };
 }
 
-export async function getProducts(restaurantId: string): Promise<Product[]> {
-  const supabase = createClient();
+export async function getProducts(_restaurantId: string): Promise<Product[]> {
+  const response = await apiFetch<ApiResponse<ProductRow[]>>("/products");
 
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("restaurant_id", restaurantId)
-    .order("name", { ascending: true });
-
-  if (error) {
-    console.error("Error obteniendo productos:", error);
-    throw new Error(error.message);
-  }
-
-  return ((data ?? []) as ProductRow[]).map(mapProduct);
+  return (response.data ?? []).map(mapProduct);
 }
 
 export async function getActiveProducts(
-  restaurantId: string,
+  _restaurantId: string,
 ): Promise<Product[]> {
-  const supabase = createClient();
+  const response =
+    await apiFetch<ApiResponse<ProductRow[]>>("/products/active");
 
-  const { data, error } = await supabase
-    .from("products")
-    .select(
-      `
-      *,
-      category:categories!inner (
-        id,
-        name,
-        is_active
-      )
-    `,
-    )
-    .eq("restaurant_id", restaurantId)
-    .eq("is_active", true)
-    .eq("categories.is_active", true)
-    .order("name", { ascending: true });
-
-  if (error) {
-    console.error("Error obteniendo productos activos:", error);
-    throw new Error(error.message);
-  }
-
-  return ((data ?? []) as ProductRow[]).map(mapProduct);
+  return (response.data ?? []).map(mapProduct);
 }
 
 export async function createProduct(
-  restaurantId: string,
+  _restaurantId: string,
   product: {
     categoryId?: string | null;
     name: string;
@@ -115,34 +82,22 @@ export async function createProduct(
     usdzUrl?: string | null;
   },
 ): Promise<Product> {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from("products")
-    .insert({
-      restaurant_id: restaurantId,
+  const response = await apiFetch<ApiResponse<ProductRow>>("/products", {
+    method: "POST",
+    body: JSON.stringify({
       category_id: product.categoryId ?? null,
       name: product.name.trim(),
-      description: product.description?.trim() || null,
+      description: product.description ?? null,
       price: product.price,
       preparation_time_minutes: product.preparationTimeMinutes ?? null,
       image_url: product.imageUrl ?? null,
       is_3d: product.is3d ?? false,
       glb_url: product.glbUrl ?? null,
       usdz_url: product.usdzUrl ?? null,
-      is_active: true,
-      is_out_of_stock: false,
-      deactivation_reason: null,
-    })
-    .select()
-    .single();
+    }),
+  });
 
-  if (error) {
-    console.error("Error creando producto:", error);
-    throw new Error(error.message);
-  }
-
-  return mapProduct(data as ProductRow);
+  return mapProduct(response.data);
 }
 
 export async function updateProduct(
@@ -162,8 +117,6 @@ export async function updateProduct(
     deactivationReason?: string | null;
   },
 ): Promise<Product> {
-  const supabase = createClient();
-
   const payload: Record<string, unknown> = {};
 
   if (updates.categoryId !== undefined) {
@@ -175,7 +128,7 @@ export async function updateProduct(
   }
 
   if (updates.description !== undefined) {
-    payload.description = updates.description?.trim() || null;
+    payload.description = updates.description;
   }
 
   if (updates.price !== undefined) {
@@ -214,46 +167,41 @@ export async function updateProduct(
     payload.deactivation_reason = updates.deactivationReason;
   }
 
-  const { data, error } = await supabase
-    .from("products")
-    .update(payload)
-    .eq("id", productId)
-    .select()
-    .single();
+  const response = await apiFetch<ApiResponse<ProductRow>>(
+    `/products/${encodeURIComponent(productId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
 
-  if (error) {
-    console.error("Error actualizando producto:", error);
-    throw new Error(error.message);
-  }
-
-  return mapProduct(data as ProductRow);
+  return mapProduct(response.data);
 }
 
 export async function toggleProductAvailability(
   productId: string,
   isOutOfStock: boolean,
 ): Promise<Product> {
-  return updateProduct(productId, {
-    isOutOfStock,
-  });
+  const response = await apiFetch<ApiResponse<ProductRow>>(
+    `/products/${encodeURIComponent(productId)}/availability`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        is_out_of_stock: isOutOfStock,
+      }),
+    },
+  );
+
+  return mapProduct(response.data);
 }
 
 export async function deleteProduct(productId: string): Promise<Product> {
-  const supabase = createClient();
+  const response = await apiFetch<ApiResponse<ProductRow>>(
+    `/products/${encodeURIComponent(productId)}`,
+    {
+      method: "DELETE",
+    },
+  );
 
-  const { data, error } = await supabase
-    .from("products")
-    .update({
-      is_active: false,
-    })
-    .eq("id", productId)
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Error desactivando producto:", error);
-    throw new Error(error.message);
-  }
-
-  return mapProduct(data as ProductRow);
+  return mapProduct(response.data);
 }

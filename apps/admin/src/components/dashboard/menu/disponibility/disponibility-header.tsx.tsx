@@ -24,7 +24,7 @@ export function StockHeader({ outOfStockCount }: StockHeaderProps) {
         </div>
 
         {outOfStockCount > 0 && (
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold self-start sm:self-auto">
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold self-start sm:self-auto">
             <AlertTriangle className="w-4 h-4 shrink-0" />
             <span>{outOfStockCount} productos agotados actualmente</span>
           </div>

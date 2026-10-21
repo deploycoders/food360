@@ -1,1 +1,205 @@
-@import "@food360/theme/globals.css";
+@import "tailwindcss";
+
+/* ==========================================================================
+   SISTEMA DE DISEÑO EDITORIAL GASTRONÓMICO (REGLA 60-30-10)
+   Inspirado en una estética limpia, cercana y minimalista para 360 food
+   ========================================================================== */
+:root {
+  /* 60% DOMINANTE: Fondo General Papel Artesanal / Off-White Crema */
+  --color-bg-base: #F9F8F3;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-subtle: #F4F1EA;
+  --color-bg-banner: #F4F1EA;
+
+  /* 30% SECUNDARIO: Estructura, Verde Bosque Profundo y Textos */
+  --color-forest: #1C3121;
+  --color-forest-dark: #132417;
+  --color-forest-light: rgba(28, 49, 33, 0.07);
+  --color-text-primary: #1C3121;
+  --color-text-body: #39463B;
+  --color-text-muted: #718073;
+  --color-text-subtle: #98A198;
+
+  /* 10% ACENTO: Terracota Sutil y Dorado Envejecido para Acciones */
+  --color-accent-terracotta: #C86D51;
+  --color-accent-terracotta-hover: #AE583F;
+  --color-accent-terracotta-light: rgba(200, 109, 81, 0.16);
+  --color-accent-gold: #7A9A7A;
+  --color-accent-gold-light: rgba(122, 154, 122, 0.18);
+
+  /* Bordes Suaves y Sutiles (1px con opacidad baja) */
+  --color-border: #E7E8E2;
+  --color-border-subtle: #F0F1EC;
+  --color-border-dark: #1C3121;
+
+  /* Estados */
+  --color-status-open: #2E7D32;
+  --color-danger: #C86D51;
+}
+
+@theme {
+  --font-serif: var(--font-serif), 'Playfair Display', Georgia, serif;
+  --font-sans: var(--font-sans), 'Plus Jakarta Sans', -apple-system, sans-serif;
+
+  --color-editorial-cream: var(--color-bg-base);
+  --color-editorial-forest: var(--color-forest);
+  --color-editorial-terracotta: var(--color-accent-terracotta);
+  --color-editorial-gold: var(--color-accent-gold);
+}
+
+body {
+  background-color: #F4F1EA;
+  color: var(--color-text-body);
+  font-family: var(--font-sans), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tipografía Editorial */
+.font-editorial-serif {
+  font-family: var(--font-serif), 'Playfair Display', Georgia, serif;
+}
+
+.font-editorial-sans {
+  font-family: var(--font-sans), 'Plus Jakarta Sans', -apple-system, sans-serif;
+}
+
+/* Tarjeta Editorial de Enlaces del Hub (Borde 10px-12px suave, fondo blanco puro) */
+.editorial-hub-card {
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  box-shadow: 0 8px 24px -18px rgba(32, 37, 31, 0.2);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.editorial-hub-card:hover {
+  border-color: #D7D9D1;
+  transform: translateY(-1.5px);
+  box-shadow: 0 14px 30px -18px rgba(32, 37, 31, 0.25);
+}
+
+.editorial-hub-card:active {
+  transform: scale(0.99);
+}
+
+/* Tarjeta Destacada de Menú (30% Forest Green) */
+.editorial-hub-card-primary {
+  background-color: var(--color-accent-terracotta);
+  border: 1px solid var(--color-accent-terracotta);
+  border-radius: 24px;
+  box-shadow: 0 14px 30px -18px rgba(123, 62, 43, 0.4);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.editorial-hub-card-primary:hover {
+  background-color: var(--color-accent-terracotta-hover);
+  transform: translateY(-1.5px);
+  box-shadow: 0 16px 32px -18px rgba(123, 62, 43, 0.48);
+}
+
+/* Tarjeta de Producto del Menú */
+.editorial-product-card {
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  box-shadow: 0 8px 22px -18px rgba(32, 37, 31, 0.18);
+  transition: all 0.25s ease;
+}
+
+.editorial-product-card:hover {
+  border-color: #D7D9D1;
+  box-shadow: 0 12px 28px -18px rgba(32, 37, 31, 0.25);
+}
+
+/* Botón de Acento Terracota (10% de la regla 60-30-10) */
+.btn-terracotta {
+  background-color: var(--color-accent-terracotta);
+  color: var(--color-text-primary);
+  transition: all 0.2s ease;
+}
+
+.btn-terracotta:hover {
+  background-color: var(--color-accent-terracotta-hover);
+}
+
+/* Píldora de Filtro de Categoría */
+.category-pill {
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+}
+
+/* Scrollbar invisible */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Controles del carrusel de platos destacados */
+.popular-dishes-swiper {
+  --swiper-theme-color: var(--color-forest);
+  --swiper-navigation-size: 18px;
+  --swiper-pagination-bottom: 0;
+  padding-inline: 2px;
+}
+
+.popular-dishes-swiper .swiper-button-next,
+.popular-dishes-swiper .swiper-button-prev {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 5px 14px -8px rgba(32, 37, 31, 0.45);
+}
+
+.popular-dishes-swiper .swiper-button-next::after,
+.popular-dishes-swiper .swiper-button-prev::after {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.popular-dishes-swiper .swiper-pagination-bullet {
+  width: 6px;
+  height: 6px;
+  background: var(--color-text-subtle);
+  opacity: 0.45;
+}
+
+.popular-dishes-swiper .swiper-pagination-bullet-active {
+  width: 18px;
+  border-radius: 9999px;
+  background: var(--color-forest);
+  opacity: 1;
+}
+
+/* Banner promocional con reproducción automática */
+.menu-hero-swiper {
+  --swiper-pagination-bottom: 14px;
+  --swiper-theme-color: var(--color-accent-terracotta);
+}
+
+.menu-hero-swiper .swiper-pagination-bullet {
+  width: 6px;
+  height: 6px;
+  background: #fff;
+  opacity: 0.45;
+}
+
+.menu-hero-swiper .swiper-pagination-bullet-active {
+  width: 19px;
+  border-radius: 9999px;
+  background: var(--color-accent-terracotta);
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .popular-dishes-swiper .swiper-button-next,
+  .popular-dishes-swiper .swiper-button-prev {
+    display: none;
+  }
+}

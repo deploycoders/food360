@@ -7,6 +7,12 @@ export interface Table {
   publicCode: string;
 }
 
+export type TableAvailability = "available" | "occupied";
+
+export interface TableOption extends Table {
+  availability: TableAvailability;
+}
+
 export interface CreateTableInput {
   tableNumber: number;
 }

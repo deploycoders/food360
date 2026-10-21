@@ -1,18 +1,49 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
+import { hasPermission, type AppRole } from "@food360/types";
+
 import { OrdersHeader } from "@/components/dashboard/orders/orders-header";
-import { OrdersFilters } from "@/components/dashboard/orders/orders-filters";
+import {
+  OrdersFilters,
+  type OrdersView,
+} from "@/components/dashboard/orders/orders-filters";
 import { OrdersTable } from "@/components/dashboard/orders/orders-table";
 import { OrderDetailModal } from "@/components/dashboard/orders/order-detail-modal";
+import { CreateOrderModal } from "@/components/dashboard/orders/create-order-modal";
 
 import { ordersService } from "@/services/orders.service";
+import { getActiveProducts } from "@/services/product.service";
 import { mapApiOrder, mapApiOrders } from "@/lib/orders/order-adapter";
+import { useOrdersRealtime } from "@/lib/hooks/use-orders-realtime";
+import { useRestaurant } from "@/context/RestaurantContext";
 
+import type { Product } from "@/types/menu";
 import type { Order, OrderStatus } from "@/types/order";
 import type { ApiOrderStatus } from "@/types/order-api";
+
+const PAGE_SIZE = 10;
+
+const ACTIVE_STATUSES: OrderStatus[] = [
+  "pending",
+  "confirmed",
+  "in_kitchen",
+  "ready",
+  "served",
+];
+
+const HISTORY_STATUSES: OrderStatus[] = ["completed", "cancelled"];
+
+const ACTIVE_STATUS_PRIORITY: Partial<Record<OrderStatus, number>> = {
+  pending: 0,
+  confirmed: 1,
+  in_kitchen: 2,
+  ready: 3,
+  served: 4,
+};
 
 const UI_TO_API_STATUS: Record<Exclude<OrderStatus, "all">, ApiOrderStatus> = {
   pending: "PENDING",
@@ -34,6 +65,11 @@ function getLocalDateKey(value: string): string {
   const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function getCreatedAtTimestamp(order: Order): number {
+  const timestamp = new Date(order.createdAt).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
 function getStatusLabel(status: OrderStatus): string {
@@ -58,18 +94,29 @@ function escapeCsv(value: unknown): string {
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const [selectedView, setSelectedView] = useState<OrdersView>("active");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>("all");
-  const [selectedDate, setSelectedDate] = useState("");
-
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const [createOrderOpen, setCreateOrderOpen] = useState(false);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+
+  const { restaurantId, role } = useRestaurant();
+
+  const canCreateOrders = role
+    ? hasPermission(role as AppRole, "orders.create")
+    : false;
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -91,15 +138,97 @@ export default function OrdersPage() {
     }
   }, []);
 
+  const loadProducts = useCallback(async () => {
+    if (!restaurantId) {
+      setProducts([]);
+      return;
+    }
+
+    setLoadingProducts(true);
+
+    try {
+      const result = await getActiveProducts(restaurantId);
+
+      setProducts(
+        result.filter((product) => product.isActive && !product.isOutOfStock),
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "No se pudieron cargar los productos.",
+      );
+    } finally {
+      setLoadingProducts(false);
+    }
+  }, [restaurantId]);
+
   useEffect(() => {
     void loadOrders();
   }, [loadOrders]);
 
-  // Búsqueda y fecha se aplican antes de calcular los contadores.
+  useEffect(() => {
+    if (createOrderOpen) {
+      void loadProducts();
+    }
+  }, [createOrderOpen, loadProducts]);
+
+  const handleRealtimeUpsert = useCallback((updatedOrder: Order) => {
+    setOrders((currentOrders) => {
+      const exists = currentOrders.some(
+        (order) => order.id === updatedOrder.id,
+      );
+
+      return exists
+        ? currentOrders.map((order) =>
+            order.id === updatedOrder.id ? updatedOrder : order,
+          )
+        : [updatedOrder, ...currentOrders];
+    });
+
+    setActiveOrder((currentOrder) =>
+      currentOrder?.id === updatedOrder.id ? updatedOrder : currentOrder,
+    );
+  }, []);
+
+  const handleRealtimeDelete = useCallback((orderId: string) => {
+    setOrders((currentOrders) =>
+      currentOrders.filter((order) => order.id !== orderId),
+    );
+
+    setActiveOrder((currentOrder) =>
+      currentOrder?.id === orderId ? null : currentOrder,
+    );
+  }, []);
+
+  useOrdersRealtime({
+    onOrderUpsert: handleRealtimeUpsert,
+    onOrderDelete: handleRealtimeDelete,
+  });
+
+  const viewCounts = useMemo<Record<OrdersView, number>>(() => {
+    let active = 0;
+    let history = 0;
+
+    for (const order of orders) {
+      if (ACTIVE_STATUSES.includes(order.status)) active++;
+      else if (HISTORY_STATUSES.includes(order.status)) history++;
+    }
+
+    return { active, history };
+  }, [orders]);
+
   const matchingOrders = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase("es");
 
     return orders.filter((order) => {
+      const belongsToView =
+        selectedView === "active"
+          ? ACTIVE_STATUSES.includes(order.status)
+          : HISTORY_STATUSES.includes(order.status);
+
+      if (!belongsToView) return false;
+
       const matchesSearch =
         !query ||
         order.code.toLocaleLowerCase("es").includes(query) ||
@@ -109,12 +238,17 @@ export default function OrdersPage() {
           item.name.toLocaleLowerCase("es").includes(query),
         );
 
-      const matchesDate =
-        !selectedDate || getLocalDateKey(order.createdAt) === selectedDate;
+      if (!matchesSearch) return false;
+      if (selectedView === "active") return true;
 
-      return matchesSearch && matchesDate;
+      const orderDate = getLocalDateKey(order.createdAt);
+
+      return (
+        (!startDate || orderDate >= startDate) &&
+        (!endDate || orderDate <= endDate)
+      );
     });
-  }, [orders, searchQuery, selectedDate]);
+  }, [orders, selectedView, searchQuery, startDate, endDate]);
 
   const statusCounts = useMemo<Partial<Record<OrderStatus, number>>>(() => {
     const counts: Partial<Record<OrderStatus, number>> = {
@@ -136,10 +270,71 @@ export default function OrdersPage() {
   }, [matchingOrders]);
 
   const filteredOrders = useMemo(() => {
-    if (selectedStatus === "all") return matchingOrders;
+    const filtered =
+      selectedStatus === "all"
+        ? matchingOrders
+        : matchingOrders.filter((order) => order.status === selectedStatus);
 
-    return matchingOrders.filter((order) => order.status === selectedStatus);
-  }, [matchingOrders, selectedStatus]);
+    return [...filtered].sort((a, b) => {
+      if (selectedView === "history") {
+        return getCreatedAtTimestamp(b) - getCreatedAtTimestamp(a);
+      }
+
+      const priorityDifference =
+        (ACTIVE_STATUS_PRIORITY[a.status] ?? 99) -
+        (ACTIVE_STATUS_PRIORITY[b.status] ?? 99);
+
+      if (priorityDifference !== 0) return priorityDifference;
+
+      return getCreatedAtTimestamp(a) - getCreatedAtTimestamp(b);
+    });
+  }, [matchingOrders, selectedStatus, selectedView]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
+
+  const pageStartIndex = (currentPage - 1) * PAGE_SIZE;
+
+  const paginatedOrders = filteredOrders.slice(
+    pageStartIndex,
+    pageStartIndex + PAGE_SIZE,
+  );
+
+  const firstVisibleOrder =
+    filteredOrders.length === 0 ? 0 : pageStartIndex + 1;
+
+  const lastVisibleOrder = Math.min(
+    pageStartIndex + PAGE_SIZE,
+    filteredOrders.length,
+  );
+
+  const handleViewChange = useCallback((view: OrdersView) => {
+    setSelectedView(view);
+    setSelectedStatus("all");
+    setCurrentPage(1);
+  }, []);
+
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+  }, []);
+
+  const handleStatusChange = useCallback((status: OrderStatus) => {
+    setSelectedStatus(status);
+    setCurrentPage(1);
+  }, []);
+
+  const handleDateRangeChange = useCallback(
+    (range: { startDate: string; endDate: string }) => {
+      setStartDate(range.startDate);
+      setEndDate(range.endDate);
+      setCurrentPage(1);
+    },
+    [],
+  );
 
   const handleUpdateStatus = useCallback(
     async (orderId: string, newStatus: OrderStatus) => {
@@ -167,12 +362,11 @@ export default function OrdersPage() {
 
         toast.success(`Pedido actualizado a: ${getStatusLabel(newStatus)}.`);
       } catch (error) {
-        const message =
+        toast.error(
           error instanceof Error
             ? error.message
-            : "No se pudo actualizar el estado del pedido.";
-
-        toast.error(message);
+            : "No se pudo actualizar el estado del pedido.",
+        );
       } finally {
         setUpdatingOrderId(null);
       }
@@ -219,8 +413,21 @@ export default function OrdersPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
 
+    const dateSuffix =
+      selectedView === "active"
+        ? "todas"
+        : startDate && endDate
+          ? startDate === endDate
+            ? startDate
+            : `${startDate}_${endDate}`
+          : startDate
+            ? `desde-${startDate}`
+            : endDate
+              ? `hasta-${endDate}`
+              : "todas";
+
     link.href = url;
-    link.download = `food360-pedidos-${selectedDate || "todos"}.csv`;
+    link.download = `food360-pedidos-${selectedView}-${dateSuffix}.csv`;
 
     document.body.appendChild(link);
     link.click();
@@ -228,23 +435,30 @@ export default function OrdersPage() {
     URL.revokeObjectURL(url);
 
     toast.success("Exportación de pedidos completada.");
-  }, [filteredOrders, selectedDate]);
+  }, [filteredOrders, selectedView, startDate, endDate]);
 
   return (
     <div className="min-w-0 space-y-5">
-      <OrdersHeader totalOrders={orders.length} onExportCSV={handleExportCSV} />
+      <OrdersHeader
+        onExportCSV={handleExportCSV}
+        canCreateOrder={canCreateOrders}
+        onCreateOrder={() => {
+          if (!canCreateOrders) return;
+          setCreateOrderOpen(true);
+        }}
+      />
 
       <OrdersFilters
+        view={selectedView}
+        onViewChange={handleViewChange}
+        viewCounts={viewCounts}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
         selectedStatus={selectedStatus}
-        onStatusChange={setSelectedStatus}
+        onStatusChange={handleStatusChange}
         startDate={startDate}
         endDate={endDate}
-        onDateRangeChange={({ startDate, endDate }) => {
-          setStartDate(startDate);
-          setEndDate(endDate);
-        }}
+        onDateRangeChange={handleDateRangeChange}
         statusCounts={statusCounts}
       />
 
@@ -257,7 +471,7 @@ export default function OrdersPage() {
             <p className="text-sm font-medium text-foreground">
               No se pudieron cargar los pedidos
             </p>
-            <p className="mt-1 wrap-break-word text-sm text-muted-foreground">
+            <p className="mt-1 break-words text-sm text-muted-foreground">
               {loadError}
             </p>
           </div>
@@ -274,10 +488,60 @@ export default function OrdersPage() {
       )}
 
       <OrdersTable
-        orders={filteredOrders}
+        orders={paginatedOrders}
         onSelectOrder={setActiveOrder}
         loading={loading}
       />
+
+      {!loading && filteredOrders.length > 0 && (
+        <nav
+          aria-label="Paginación de órdenes"
+          className="flex flex-col gap-3 rounded-xl border border-border bg-card px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4"
+        >
+          <p className="text-xs text-muted-foreground">
+            Mostrando{" "}
+            <span className="font-semibold text-foreground">
+              {firstVisibleOrder}–{lastVisibleOrder}
+            </span>{" "}
+            de{" "}
+            <span className="font-semibold text-foreground">
+              {filteredOrders.length}
+            </span>{" "}
+            órdenes
+          </p>
+
+          <div className="flex items-center justify-between gap-3 sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage <= 1}
+              className="inline-flex min-h-10 items-center justify-center gap-1 rounded-lg border border-border px-3 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronLeft aria-hidden="true" className="h-4 w-4" />
+              Anterior
+            </button>
+
+            <span
+              aria-live="polite"
+              className="whitespace-nowrap text-xs font-medium text-muted-foreground"
+            >
+              Página {currentPage} de {totalPages}
+            </span>
+
+            <button
+              type="button"
+              onClick={() =>
+                setCurrentPage((page) => Math.min(totalPages, page + 1))
+              }
+              disabled={currentPage >= totalPages}
+              className="inline-flex min-h-10 items-center justify-center gap-1 rounded-lg border border-border px-3 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Siguiente
+              <ChevronRight aria-hidden="true" className="h-4 w-4" />
+            </button>
+          </div>
+        </nav>
+      )}
 
       <OrderDetailModal
         order={activeOrder}
@@ -285,6 +549,19 @@ export default function OrdersPage() {
         onUpdateStatus={handleUpdateStatus}
         updating={updatingOrderId === activeOrder?.id}
       />
+
+      <CreateOrderModal
+        open={createOrderOpen}
+        onClose={() => setCreateOrderOpen(false)}
+        onCreated={loadOrders}
+        products={products}
+      />
+
+      {loadingProducts && createOrderOpen && (
+        <p className="sr-only" role="status">
+          Cargando productos disponibles...
+        </p>
+      )}
     </div>
   );
 }

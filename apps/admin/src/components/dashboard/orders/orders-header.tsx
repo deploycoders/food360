@@ -1,48 +1,67 @@
 "use client";
 
-import React from "react";
-import { Download, ExternalLink, ShoppingBag } from "lucide-react";
+import { Download, ExternalLink, Plus } from "lucide-react";
 import Link from "next/link";
 
 interface OrdersHeaderProps {
-  totalOrders: number;
   onExportCSV: () => void;
+  onCreateOrder: () => void;
+  canCreateOrder?: boolean;
 }
 
-export function OrdersHeader({ totalOrders, onExportCSV }: OrdersHeaderProps) {
+export function OrdersHeader({
+  onExportCSV,
+  onCreateOrder,
+  canCreateOrder = true,
+}: OrdersHeaderProps) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 ">
-      <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-3xl font-bold text-foreground">
+    <header className="flex flex-col gap-5 border-b border-border/60 pb-6 xl:flex-row xl:items-center xl:justify-between">
+      {/* Título y contexto */}
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             Historial y Gestión de Pedidos
           </h1>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          Monitorea, filtra, cobra y gestiona el estado administrativo de todas
-          las comandas.
+
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+          Consulta las comandas, supervisa su estado y gestiona los pedidos de
+          tu restaurante desde un solo lugar.
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
+      {/* Acciones */}
+      <div className="flex flex-wrap items-center gap-2">
         <Link
           href="/kds"
           target="_blank"
-          className="px-3.5 py-2 rounded-lg bg-accent/10 hover:bg-accent/20 border border-accent/30 text-accent text-xs font-semibold flex items-center gap-2 transition-colors"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center cursor-pointer gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
+          <ExternalLink className="h-4 w-4" />
           <span>Pantalla KDS</span>
-          <ExternalLink className="w-3.5 h-3.5" />
         </Link>
 
         <button
           type="button"
           onClick={onExportCSV}
-          className="px-3.5 py-2 rounded-lg bg-muted hover:bg-muted/80 border border-border text-foreground text-xs font-semibold flex items-center gap-2 transition-colors"
+          className="inline-flex items-center justify-center cursor-pointer gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
-          <Download className="w-3.5 h-3.5" />
+          <Download className="h-4 w-4" />
           <span>Exportar CSV</span>
         </button>
+
+        {canCreateOrder && (
+          <button
+            type="button"
+            onClick={onCreateOrder}
+            className="inline-flex items-center justify-center cursor-pointer gap-2 px-4 py-2.5 rounded-lg bg-accent text-accent-foreground font-semibold text-xs hover:opacity-90 transition-all duration-200 shadow-sm active:scale-95 self-start sm:self-auto"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Nueva orden</span>
+          </button>
+        )}
       </div>
-    </div>
+    </header>
   );
 }

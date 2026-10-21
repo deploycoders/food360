@@ -113,7 +113,7 @@ export const showTimedToast = (
 
 export const confirmDeactivateMember = async (
   memberName: string,
-  onConfirm: () => Promise<void>,
+  onConfirm?: () => Promise<void>,
 ) => {
   const result = await Food360Swal.fire({
     icon: "warning",
@@ -127,13 +127,18 @@ export const confirmDeactivateMember = async (
   });
 
   if (!result.isConfirmed) {
-    return;
+    return false;
+  }
+
+  if (!onConfirm) {
+    return true;
   }
 
   try {
     await onConfirm();
 
     showTimedToast(`${memberName} fue desactivado correctamente`, "success");
+    return true;
   } catch (error) {
     console.error("Error desactivando miembro:", error);
 
@@ -144,12 +149,13 @@ export const confirmDeactivateMember = async (
         ? error.message
         : "Ocurrió un error al desactivar el miembro.",
     );
+    return false;
   }
 };
 
 /*                              CONFIRMAR LOGOUT                               */
 
-export const confirmLogout = async (onConfirm: () => Promise<void>) => {
+export const confirmLogout = async (onConfirm?: () => Promise<void>) => {
   const result = await Food360Swal.fire({
     icon: "warning",
     title: "¿Cerrar sesión?",
@@ -162,11 +168,16 @@ export const confirmLogout = async (onConfirm: () => Promise<void>) => {
   });
 
   if (!result.isConfirmed) {
-    return;
+    return false;
+  }
+
+  if (!onConfirm) {
+    return true;
   }
 
   try {
     await onConfirm();
+    return true;
   } catch (error) {
     console.error("Error cerrando sesión:", error);
 
@@ -177,6 +188,7 @@ export const confirmLogout = async (onConfirm: () => Promise<void>) => {
         ? error.message
         : "Ocurrió un error al cerrar la sesión.",
     );
+    return false;
   }
 };
 
@@ -184,7 +196,7 @@ export const confirmLogout = async (onConfirm: () => Promise<void>) => {
 
 export const confirmDeleteCategory = async (
   categoryName: string,
-  onConfirm: () => Promise<void>,
+  onConfirm?: () => Promise<void>,
 ) => {
   const result = await Food360Swal.fire({
     icon: "warning",
@@ -198,13 +210,18 @@ export const confirmDeleteCategory = async (
   });
 
   if (!result.isConfirmed) {
-    return;
+    return false;
+  }
+
+  if (!onConfirm) {
+    return true;
   }
 
   try {
     await onConfirm();
 
     showTimedToast(`"${categoryName}" eliminada correctamente`, "success");
+    return true;
   } catch (error) {
     console.error("Error eliminando categoría:", error);
 
@@ -215,6 +232,7 @@ export const confirmDeleteCategory = async (
         ? error.message
         : "Ocurrió un error al eliminar la categoría.",
     );
+    return false;
   }
 };
 
@@ -222,7 +240,7 @@ export const confirmDeleteCategory = async (
 
 export const confirmDesactivateProduct = async (
   productName: string,
-  onConfirm: () => Promise<void>,
+  onConfirm?: () => Promise<void>,
 ) => {
   const result = await Food360Swal.fire({
     icon: "warning",
@@ -236,13 +254,18 @@ export const confirmDesactivateProduct = async (
   });
 
   if (!result.isConfirmed) {
-    return;
+    return false;
+  }
+
+  if (!onConfirm) {
+    return true;
   }
 
   try {
     await onConfirm();
 
     showTimedToast(`"${productName}" desactivado correctamente`, "success");
+    return true;
   } catch (error) {
     console.error("Error desactivando producto:", error);
 
@@ -253,6 +276,7 @@ export const confirmDesactivateProduct = async (
         ? error.message
         : "Ocurrió un error al desactivar el producto.",
     );
+    return false;
   }
 };
 

@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { supabaseAdmin } from "@food360/database";
+import { hasPermission } from "@food360/types";
 
 export const ordersRouter: Router = Router();
 
@@ -12,6 +13,7 @@ interface CreateOrderBody {
   phone?: string;
   full_name?: string;
   origin?: string;
+  table_id?: string | null;
   items?: CreateOrderItemInput[];
 }
 
@@ -78,7 +80,14 @@ ordersRouter.post("/", async (req: Request, res: Response) => {
   const body = req.body as CreateOrderBody;
 
   const restaurantId = req.restaurantId;
-  const { phone, full_name, origin, items } = body;
+  const { phone, full_name, origin, table_id, items } = body;
+
+  if (!hasPermission(req.userRole, "orders.create")) {
+    return res.status(403).json({
+      success: false,
+      error: "You do not have permission to create orders",
+    });
+  }
 
   if (
     !restaurantId ||
@@ -95,6 +104,36 @@ ordersRouter.post("/", async (req: Request, res: Response) => {
       success: false,
       error: "phone, full_name, origin and items are required",
     });
+  }
+
+  const normalizedOrigin = origin.trim().toUpperCase();
+
+  const allowedOrigins = new Set(["DINE_IN", "TAKEAWAY", "DELIVERY"]);
+
+  if (!allowedOrigins.has(normalizedOrigin)) {
+    return res.status(400).json({
+      success: false,
+      error: "Invalid order origin",
+      allowed_origins: Array.from(allowedOrigins),
+    });
+  }
+
+  // Solo los pedidos en mesa pueden tener table_id.
+  // Los otros orígenes siempre se guardan con table_id = null.
+  let tableId: string | null = null;
+
+  if (normalizedOrigin === "DINE_IN") {
+    const uuidPattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    if (typeof table_id !== "string" || !uuidPattern.test(table_id.trim())) {
+      return res.status(400).json({
+        success: false,
+        error: "A valid table_id is required for DINE_IN orders",
+      });
+    }
+
+    tableId = table_id.trim();
   }
 
   const invalidItem = items.some(
@@ -114,7 +153,31 @@ ordersRouter.post("/", async (req: Request, res: Response) => {
   }
 
   try {
-    const productIds = [...new Set(items.map((item) => item.product_id))];
+    // Verificar que la mesa exista y pertenezca al restaurante
+    // asociado a la sesión autenticada.
+    if (tableId) {
+      const { data: selectedTable, error: tableError } = await supabaseAdmin
+        .from("tables")
+        .select("id")
+        .eq("id", tableId)
+        .eq("restaurant_id", restaurantId)
+        .maybeSingle();
+
+      if (tableError) throw tableError;
+
+      if (!selectedTable) {
+        return res.status(400).json({
+          success: false,
+          error: "The selected table does not belong to this restaurant",
+        });
+      }
+    }
+
+    // Consultar los productos en la base de datos.
+    // El cliente no decide los precios definitivos.
+    const productIds = Array.from(
+      new Set(items.map((item) => item.product_id)),
+    );
 
     const { data: products, error: productsError } = await supabaseAdmin
       .from("products")
@@ -211,20 +274,23 @@ ordersRouter.post("/", async (req: Request, res: Response) => {
       customerId = newCustomer.id;
     }
 
+    // Guardar el identificador de la mesa junto al pedido.
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .insert({
         restaurant_id: restaurantId,
         customer_id: customerId,
-        origin: origin.trim(),
+        table_id: tableId,
+        origin: normalizedOrigin,
         total_amount: totalAmount,
         status: "PENDING",
       })
-      .select("id")
+      .select("id, table_id, origin, status, total_amount")
       .single();
 
     if (orderError) throw orderError;
 
+    // Insertar los artículos del pedido.
     const { error: itemsError } = await supabaseAdmin
       .from("order_items")
       .insert(
@@ -235,7 +301,8 @@ ordersRouter.post("/", async (req: Request, res: Response) => {
       );
 
     if (itemsError) {
-      // Evitar dejar una orden sin sus artículos si falla el segundo insert.
+      // Si falla la inserción de artículos, eliminar el pedido
+      // incompleto para no dejarlo sin sus líneas.
       const { error: rollbackError } = await supabaseAdmin
         .from("orders")
         .delete()
@@ -252,7 +319,10 @@ ordersRouter.post("/", async (req: Request, res: Response) => {
     return res.status(201).json({
       success: true,
       order_id: order.id,
-      total_amount: totalAmount,
+      table_id: order.table_id,
+      origin: order.origin,
+      status: order.status,
+      total_amount: Number(order.total_amount),
     });
   } catch (error: unknown) {
     console.error("Error al crear la orden:", error);

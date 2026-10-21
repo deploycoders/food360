@@ -1,5 +1,11 @@
-import { createClient } from "@/lib/supabase/client";
+import { apiFetch } from "@/lib/api-client";
 import type { Category } from "@/types/menu";
+
+type ApiResponse<T> = {
+  success: boolean;
+  data: T;
+  error?: string;
+};
 
 type CategoryRow = {
   id: string;
@@ -23,71 +29,39 @@ function mapCategory(row: CategoryRow): Category {
   };
 }
 
-export async function getCategories(restaurantId: string): Promise<Category[]> {
-  const supabase = createClient();
+export async function getCategories(
+  _restaurantId: string,
+): Promise<Category[]> {
+  const response = await apiFetch<ApiResponse<CategoryRow[]>>("/categories");
 
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*")
-    .eq("restaurant_id", restaurantId)
-    .order("sort_order", { ascending: true })
-    .order("name", { ascending: true });
-
-  if (error) {
-    console.error("Error obteniendo categorías:", error);
-    throw new Error(error.message);
-  }
-
-  return ((data ?? []) as CategoryRow[]).map(mapCategory);
+  return (response.data ?? []).map(mapCategory);
 }
 
 export async function getActiveCategories(
-  restaurantId: string,
+  _restaurantId: string,
 ): Promise<Category[]> {
-  const supabase = createClient();
+  const response =
+    await apiFetch<ApiResponse<CategoryRow[]>>("/categories/active");
 
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*")
-    .eq("restaurant_id", restaurantId)
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true })
-    .order("name", { ascending: true });
-
-  if (error) {
-    console.error("Error obteniendo categorías activas:", error);
-    throw new Error(error.message);
-  }
-
-  return ((data ?? []) as CategoryRow[]).map(mapCategory);
+  return (response.data ?? []).map(mapCategory);
 }
 
 export async function createCategory(
-  restaurantId: string,
+  _restaurantId: string,
   category: {
     name: string;
     sortOrder?: number;
   },
 ): Promise<Category> {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from("categories")
-    .insert({
-      restaurant_id: restaurantId,
+  const response = await apiFetch<ApiResponse<CategoryRow>>("/categories", {
+    method: "POST",
+    body: JSON.stringify({
       name: category.name.trim(),
       sort_order: category.sortOrder ?? 0,
-      is_active: true,
-    })
-    .select()
-    .single();
+    }),
+  });
 
-  if (error) {
-    console.error("Error creando categoría:", error);
-    throw new Error(error.message);
-  }
-
-  return mapCategory(data as CategoryRow);
+  return mapCategory(response.data);
 }
 
 export async function updateCategory(
@@ -98,8 +72,6 @@ export async function updateCategory(
     isActive?: boolean;
   },
 ): Promise<Category> {
-  const supabase = createClient();
-
   const payload: Record<string, unknown> = {};
 
   if (updates.name !== undefined) {
@@ -114,38 +86,39 @@ export async function updateCategory(
     payload.is_active = updates.isActive;
   }
 
-  const { data, error } = await supabase
-    .from("categories")
-    .update(payload)
-    .eq("id", categoryId)
-    .select()
-    .single();
+  const response = await apiFetch<ApiResponse<CategoryRow>>(
+    `/categories/${encodeURIComponent(categoryId)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  );
 
-  if (error) {
-    console.error("Error actualizando categoría:", error);
-    throw new Error(error.message);
-  }
-
-  return mapCategory(data as CategoryRow);
+  return mapCategory(response.data);
 }
 
 export async function toggleCategoryStatus(
   categoryId: string,
   isActive: boolean,
 ): Promise<Category> {
-  return updateCategory(categoryId, { isActive });
+  const response = await apiFetch<ApiResponse<CategoryRow>>(
+    `/categories/${encodeURIComponent(categoryId)}/status`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        is_active: isActive,
+      }),
+    },
+  );
+
+  return mapCategory(response.data);
 }
 
 export async function deleteCategory(categoryId: string): Promise<void> {
-  const supabase = createClient();
-
-  const { error } = await supabase
-    .from("categories")
-    .delete()
-    .eq("id", categoryId);
-
-  if (error) {
-    console.error("Error eliminando categoría:", error);
-    throw new Error(error.message);
-  }
+  await apiFetch<ApiResponse<{ id: string }>>(
+    `/categories/${encodeURIComponent(categoryId)}`,
+    {
+      method: "DELETE",
+    },
+  );
 }

@@ -17,7 +17,7 @@ import {
   X,
   Armchair,
 } from "lucide-react";
-
+import { useActiveOrdersCount } from "@/lib/hooks/use-active-orders-count";
 import { hasPermission, type AppRole, type Permission } from "@food360/types";
 
 import { useLogout } from "@/lib/hooks/use-logout";
@@ -55,7 +55,6 @@ const navigation: NavSection[] = [
         label: "Órdenes",
         href: "/orders",
         icon: ShoppingBag,
-        badge: 3,
         permission: "orders.view",
       },
     ],
@@ -111,6 +110,7 @@ const navigation: NavSection[] = [
 export function Sidebar({ userRole = "admin", isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { logout } = useLogout();
+  const activeOrdersCount = useActiveOrdersCount();
 
   const filteredNavigation = navigation
     .map((section) => ({
@@ -263,9 +263,12 @@ export function Sidebar({ userRole = "admin", isOpen, onClose }: SidebarProps) {
                           <span>{item.label}</span>
                         </div>
 
-                        {item.badge !== undefined && (
-                          <span className="rounded-full border border-accent/25 bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
-                            {item.badge}
+                        {item.href === "/orders" && activeOrdersCount > 0 && (
+                          <span
+                            className="rounded-full border border-accent/25 bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent"
+                            aria-label={`${activeOrdersCount} órdenes activas`}
+                          >
+                            {activeOrdersCount > 99 ? "99+" : activeOrdersCount}
                           </span>
                         )}
                       </Link>

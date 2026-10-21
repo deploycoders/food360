@@ -86,10 +86,10 @@ export default function CategoriesPage() {
         <button
           type="button"
           onClick={handleOpenCreate}
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-semibold text-accent-foreground transition hover:opacity-90"
+          className="inline-flex items-center justify-center cursor-pointer gap-2 px-4 py-2.5 rounded-lg bg-accent text-accent-foreground font-semibold text-xs hover:opacity-90 transition-all duration-200 shadow-sm active:scale-95 self-start sm:self-auto"
         >
           <Plus className="h-4 w-4" />
-          Nueva categoría
+          <span>Nueva Categoría</span>
         </button>
       </div>
 
