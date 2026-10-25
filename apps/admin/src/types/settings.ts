@@ -16,13 +16,5 @@ export interface DaySchedule {
   isOpen: boolean;
   openTime: string;
   closeTime: string;
-}
-
-export interface QRSettings {
-  tableCount: number;
-  allowSelfOrdering: boolean;
-  requireTableNumber: boolean;
-  serviceTaxPercentage: number;
-  wifiName: string;
-  wifiPassword?: string;
+  closesNextDay?: boolean;
 }

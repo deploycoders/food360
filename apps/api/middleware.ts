@@ -76,13 +76,28 @@ export async function verifyAuth(
     // 2. Obtener membresía del restaurante
     // ----------------------------------------------------------
 
-    const { data: membership, error: membershipError } = await supabase
+    const selectedRestaurantId = req.header("x-food360-restaurant-id")?.trim();
+
+    if (
+      selectedRestaurantId &&
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        selectedRestaurantId,
+      )
+    ) {
+      return res.status(400).json({ error: "El restaurante seleccionado no es válido" });
+    }
+
+    const membershipQuery = supabase
       .from("restaurant_members")
       .select("restaurant_id, role")
       .eq("user_id", user.id)
-      .eq("is_active", true)
-      .limit(1)
-      .maybeSingle();
+      .eq("is_active", true);
+
+    const { data: membership, error: membershipError } = selectedRestaurantId
+      ? await membershipQuery
+          .eq("restaurant_id", selectedRestaurantId)
+          .maybeSingle()
+      : await membershipQuery.limit(1).maybeSingle();
 
     if (membershipError) {
       console.error("Error obteniendo membresía:", membershipError);

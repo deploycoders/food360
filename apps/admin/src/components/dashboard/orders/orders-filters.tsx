@@ -57,50 +57,78 @@ export function OrdersFilters({
 
   return (
     <section className="space-y-4">
-      {/* Vistas principales */}
-      <div className="grid grid-cols-2 gap-2" aria-label="Tipo de órdenes">
-        <button
-          type="button"
-          onClick={() => onViewChange("active")}
-          aria-pressed={view === "active"}
-          className={`flex min-h-14 items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
-            view === "active"
-              ? "border-accent/30 bg-accent/10 text-accent"
-              : "border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-          }`}
+      {/* Selector compacto: Activas / Historial */}
+      <div className="flex justify-end">
+        <div
+          role="tablist"
+          aria-label="Tipo de órdenes"
+          className="inline-flex w-fit max-w-full items-center gap-1 rounded-xl border border-border bg-muted/40 p-1"
         >
-          <span className="flex min-w-0 items-center gap-2">
-            <Activity aria-hidden="true" className="h-4 w-4 shrink-0" />
-            <span className="truncate text-sm font-semibold">Activas</span>
-          </span>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "active"}
+            onClick={() => onViewChange("active")}
+            className={`inline-flex h-10 flex-none items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-all ${
+              view === "active"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Activity
+              aria-hidden="true"
+              className={`h-4 w-4 shrink-0 ${
+                view === "active" ? "text-accent" : ""
+              }`}
+            />
 
-          <span className="rounded-md bg-background/80 px-2 py-1 font-mono text-xs font-semibold">
-            {viewCounts.active}
-          </span>
-        </button>
+            <span>Activas</span>
 
-        <button
-          type="button"
-          onClick={() => onViewChange("history")}
-          aria-pressed={view === "history"}
-          className={`flex min-h-14 items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
-            view === "history"
-              ? "border-accent/30 bg-accent/10 text-accent"
-              : "border-border bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-          }`}
-        >
-          <span className="flex min-w-0 items-center gap-2">
-            <Archive aria-hidden="true" className="h-4 w-4 shrink-0" />
-            <span className="truncate text-sm font-semibold">Historial</span>
-          </span>
+            <span
+              className={`rounded-md px-1.5 py-0.5 font-mono text-[10px] tabular-nums ${
+                view === "active"
+                  ? "bg-accent/10 text-accent"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {viewCounts.active}
+            </span>
+          </button>
 
-          <span className="rounded-md bg-background/80 px-2 py-1 font-mono text-xs font-semibold">
-            {viewCounts.history}
-          </span>
-        </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "history"}
+            onClick={() => onViewChange("history")}
+            className={`inline-flex h-10 flex-none items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-all ${
+              view === "history"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Archive
+              aria-hidden="true"
+              className={`h-4 w-4 shrink-0 ${
+                view === "history" ? "text-accent" : ""
+              }`}
+            />
+
+            <span>Historial</span>
+
+            <span
+              className={`rounded-md px-1.5 py-0.5 font-mono text-[10px] tabular-nums ${
+                view === "history"
+                  ? "bg-accent/10 text-accent"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {viewCounts.history}
+            </span>
+          </button>
+        </div>
       </div>
 
-      {/* Filtros por estado de la vista seleccionada */}
+      {/* Filtros por estado */}
       <div className="-mx-1 overflow-x-auto px-1 pb-2">
         <div className="flex w-max min-w-full items-center gap-1.5">
           {tabs.map((tab) => {

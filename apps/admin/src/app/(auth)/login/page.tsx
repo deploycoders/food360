@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createBrowserClient } from "@supabase/ssr";
 import {
   UtensilsCrossed,
   Lock,
@@ -14,15 +13,11 @@ import {
   ChefHat,
   AlertCircle,
 } from "lucide-react";
-
-// Instancia única fuera del ciclo de render de React
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -46,71 +41,133 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrorMessage(null);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password: password.trim(),
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password.trim(),
+      });
 
-    if (error) {
-      console.error("Error Auth Supabase:", error);
-      setIsLoading(false);
-      // Muestra el mensaje exacto que devuelve Supabase
-      setErrorMessage(error.message);
-      return;
-    }
+      if (error) {
+        console.error("Error Auth Supabase:", error);
+        setErrorMessage(error.message);
+        return;
+      }
 
-    if (data?.user) {
-      const { data: membership, error: membershipError } = await supabase
+      if (!data.user) {
+        setErrorMessage("No se pudo verificar tu sesión. Inténtalo de nuevo.");
+        return;
+      }
+
+      // Consultamos todas las membresías para no confundir una
+      // membresía inactiva con un usuario que nunca tuvo restaurante.
+      const { data: memberships, error: membershipError } = await supabase
         .from("restaurant_members")
         .select("role, is_active")
-        .eq("user_id", data.user.id)
-        .limit(1)
-        .maybeSingle();
+        .eq("user_id", data.user.id);
 
-      if (membershipError || !membership) {
-        console.error(
-          "No se encontró membresía del restaurante:",
-          membershipError,
+      if (membershipError) {
+        console.error("Error verificando membresías:", membershipError);
+        setErrorMessage("No se pudo verificar tu acceso. Inténtalo de nuevo.");
+        return;
+      }
+
+      const activeMembership = (memberships ?? []).find(
+        (membership) => membership.is_active,
+      );
+
+      // El usuario tiene una sesión válida, pero todavía no pertenece
+      // a ningún restaurante: debe ir al onboarding, no quedarse en login.
+      if (!activeMembership) {
+        const hasInactiveMembership = (memberships ?? []).length > 0;
+
+        if (hasInactiveMembership) {
+          await supabase.auth.signOut();
+
+          setErrorMessage(
+            "Tu acceso al restaurante está desactivado. Contacta al administrador.",
+          );
+          return;
+        }
+
+        // Conservamos la vuelta al enlace de invitación si el usuario
+        // llegó al login desde /invite/[token].
+        const rawCookieRedirect = getCookie("redirectTo");
+        const queryRedirect = new URLSearchParams(window.location.search).get(
+          "redirectTo",
         );
 
-        setIsLoading(false);
-        setErrorMessage("Tu usuario no está asociado a ningún restaurante.");
+        let requestedRedirect = queryRedirect;
+
+        if (rawCookieRedirect) {
+          try {
+            requestedRedirect = decodeURIComponent(rawCookieRedirect);
+          } catch {
+            requestedRedirect = rawCookieRedirect;
+          }
+        }
+
+        const isSafeInviteRedirect =
+          !!requestedRedirect &&
+          requestedRedirect.startsWith("/") &&
+          !requestedRedirect.startsWith("//") &&
+          /^\/invite\/[^/]+$/.test(requestedRedirect);
+
+        deleteCookie("redirectTo");
+
+        window.location.replace(
+          isSafeInviteRedirect ? requestedRedirect! : "/onboarding",
+        );
 
         return;
       }
 
-      if (!membership.is_active) {
-        await supabase.auth.signOut();
+      // A partir de aquí, el usuario sí tiene una membresía activa.
+      const rawCookieRedirect = getCookie("redirectTo");
+      const queryRedirect = new URLSearchParams(window.location.search).get(
+        "redirectTo",
+      );
 
-        setIsLoading(false);
-        setErrorMessage(
-          "Tu cuenta está desactivada. Contacta al administrador del restaurante.",
-        );
+      let requestedRedirect = queryRedirect;
 
-        return;
+      if (rawCookieRedirect) {
+        try {
+          requestedRedirect = decodeURIComponent(rawCookieRedirect);
+        } catch {
+          requestedRedirect = rawCookieRedirect;
+        }
       }
-
-      const rawRedirectTo = getCookie("redirectTo");
 
       deleteCookie("redirectTo");
 
-      const redirectTo = rawRedirectTo
-        ? decodeURIComponent(rawRedirectTo)
-        : null;
-
       let targetPath = "/orders";
 
-      if (membership.role === "owner" || membership.role === "admin") {
+      if (
+        activeMembership.role === "owner" ||
+        activeMembership.role === "admin"
+      ) {
         targetPath = "/";
-      } else if (membership.role === "chef") {
+      } else if (activeMembership.role === "chef") {
         targetPath = "/kds";
       }
 
-      if (redirectTo) {
-        targetPath = redirectTo;
+      // Solo aceptamos rutas internas; nunca URLs externas.
+      if (
+        requestedRedirect &&
+        requestedRedirect.startsWith("/") &&
+        !requestedRedirect.startsWith("//")
+      ) {
+        targetPath = requestedRedirect;
       }
 
-      window.location.href = targetPath;
+      window.location.replace(targetPath);
+    } catch (error) {
+      console.error("Error durante el inicio de sesión:", error);
+
+      setErrorMessage(
+        "Ocurrió un error inesperado al iniciar sesión. Inténtalo de nuevo.",
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -168,7 +225,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => router.push("/forgot-password")}
-                className="text-xs text-accent hover:underline"
+                className="text-xs text-accent cursor-pointer hover:underline"
               >
                 ¿Olvidaste tu clave?
               </button>

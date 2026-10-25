@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -14,34 +14,56 @@ import {
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const requestRecovery = async () => {
+    const normalizedEmail = email.trim();
+
+    if (!normalizedEmail) {
+      setErrorMessage("Introduce el correo electrónico de tu cuenta.");
+      return;
+    }
 
     setIsLoading(true);
     setErrorMessage(null);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-
-    if (error) {
-      console.error("Error enviando recuperación:", error);
-      setErrorMessage(
-        "No se pudo enviar el correo de recuperación. Inténtalo nuevamente.",
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        normalizedEmail,
+        { redirectTo: `${window.location.origin}/reset-password` },
       );
-      setIsLoading(false);
-      return;
-    }
 
-    setSent(true);
-    setIsLoading(false);
+      if (error) {
+        console.error("Error solicitando recuperación:", error);
+        setErrorMessage(
+          error.status === 429
+            ? "Se solicitaron varios correos recientemente. Espera un momento antes de intentarlo otra vez."
+            : "No se pudo solicitar el correo de recuperación. Comprueba tu conexión e inténtalo nuevamente.",
+        );
+        return;
+      }
+
+      // Supabase puede responder correctamente sin revelar si el correo existe.
+      setEmail(normalizedEmail);
+      setSent(true);
+    } catch (error) {
+      console.error("Error de conexión solicitando recuperación:", error);
+      setErrorMessage(
+        "No se pudo contactar con el servicio de recuperación. Comprueba tu conexión e inténtalo nuevamente.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void requestRecovery();
   };
 
   return (
@@ -62,7 +84,7 @@ export default function ForgotPasswordPage() {
         </div>
 
         {sent ? (
-          <div className="space-y-6">
+          <div className="space-y-4" aria-live="polite">
             <div className="rounded-xl border border-border bg-muted/40 p-5 text-center">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent">
                 <CheckCircle2 className="h-6 w-6" />
@@ -80,10 +102,38 @@ export default function ForgotPasswordPage() {
 
             <button
               type="button"
-              onClick={() => router.push("/login")}
-              className="w-full py-2.5 px-4 cursor-pointer text-sm font-semibold rounded-xl border border-border bg-muted hover:bg-muted/80 text-foreground transition-colors flex items-center justify-center gap-2"
+              disabled={isLoading}
+              onClick={() => void requestRecovery()}
+              className="w-full py-2.5 px-4 cursor-pointer text-sm font-semibold rounded-xl bg-accent text-accent-foreground hover:opacity-95 transition-colors flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <ArrowLeft className="w-4 h-4" />
+              {isLoading ? "Solicitando..." : "Reenviar correo"}
+            </button>
+
+            {errorMessage && (
+              <div role="alert" className="rounded-xl border border-destructive/20 bg-destructive/10 p-3.5 text-xs text-destructive">
+                {errorMessage}
+              </div>
+            )}
+
+            <button
+              type="button"
+              disabled={isLoading}
+              onClick={() => {
+                setSent(false);
+                setErrorMessage(null);
+              }}
+              className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl border border-border bg-muted hover:bg-muted/80 text-foreground transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <Mail className="w-4 h-4" />
+              Usar otro correo
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/login")}
+              className="w-full py-2.5 px-4 text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-2"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
               Volver al inicio de sesión
             </button>
           </div>
@@ -109,7 +159,7 @@ export default function ForgotPasswordPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-2">
+                <label htmlFor="recovery-email" className="block text-xs font-semibold text-foreground mb-2">
                   Correo Electrónico
                 </label>
 
@@ -118,10 +168,16 @@ export default function ForgotPasswordPage() {
 
                   <input
                     type="email"
+                    id="recovery-email"
                     required
                     autoComplete="email"
+                    maxLength={254}
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setErrorMessage(null);
+                    }}
+                    disabled={isLoading}
                     placeholder="nombre@restaurante.com"
                     className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-border bg-muted/40 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all"
                   />

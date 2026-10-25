@@ -6,35 +6,59 @@
    ========================================================================== */
 :root {
   /* 60% DOMINANTE: Fondo General Papel Artesanal / Off-White Crema */
-  --color-bg-base: #F9F8F3;
-  --color-bg-surface: #FFFFFF;
-  --color-bg-subtle: #F4F1EA;
-  --color-bg-banner: #F4F1EA;
+  --color-bg-base: #fafafa;
+  --color-bg-surface: #ffffff;
+  --color-bg-subtle: #f5f5f5;
+  --color-bg-banner: #f5f5f5;
 
   /* 30% SECUNDARIO: Estructura, Verde Bosque Profundo y Textos */
-  --color-forest: #1C3121;
-  --color-forest-dark: #132417;
-  --color-forest-light: rgba(28, 49, 33, 0.07);
-  --color-text-primary: #1C3121;
-  --color-text-body: #39463B;
-  --color-text-muted: #718073;
-  --color-text-subtle: #98A198;
+  --color-forest: #171717;
+  --color-forest-dark: #262626;
+  --color-forest-light: rgba(23, 23, 23, 0.07);
+  --color-text-primary: #171717;
+  --color-text-body: #404040;
+  --color-text-muted: #737373;
+  --color-text-subtle: #8a8a8a;
 
   /* 10% ACENTO: Terracota Sutil y Dorado Envejecido para Acciones */
-  --color-accent-terracotta: #C86D51;
-  --color-accent-terracotta-hover: #AE583F;
-  --color-accent-terracotta-light: rgba(200, 109, 81, 0.16);
-  --color-accent-gold: #7A9A7A;
-  --color-accent-gold-light: rgba(122, 154, 122, 0.18);
+  --color-accent-terracotta: #c2410c;
+  --color-accent-terracotta-hover: #9a3412;
+  --color-accent-terracotta-light: rgba(194, 65, 12, 0.16);
+  --color-accent-gold: #c2410c;
+  --color-accent-gold-light: rgba(194, 65, 12, 0.18);
 
   /* Bordes Suaves y Sutiles (1px con opacidad baja) */
-  --color-border: #E7E8E2;
-  --color-border-subtle: #F0F1EC;
-  --color-border-dark: #1C3121;
+  --color-border: #e5e5e5;
+  --color-border-subtle: #f0f0f0;
+  --color-border-dark: #171717;
 
   /* Estados */
-  --color-status-open: #2E7D32;
-  --color-danger: #C86D51;
+  --color-status-open: #15803d;
+  --color-danger: #dc2626;
+}
+
+.dark {
+  --color-bg-base: #0a0a0a;
+  --color-bg-surface: #141414;
+  --color-bg-subtle: #1a1a1a;
+  --color-bg-banner: #1a1a1a;
+  --color-forest: #fafafa;
+  --color-forest-dark: #e5e5e5;
+  --color-forest-light: rgba(250, 250, 250, 0.1);
+  --color-text-primary: #fafafa;
+  --color-text-body: #e5e5e5;
+  --color-text-muted: #a3a3a3;
+  --color-text-subtle: #8a8a8a;
+  --color-accent-terracotta: #ea580c;
+  --color-accent-terracotta-hover: #f97316;
+  --color-accent-terracotta-light: rgba(234, 88, 12, 0.18);
+  --color-accent-gold: #ea580c;
+  --color-accent-gold-light: rgba(234, 88, 12, 0.18);
+  --color-border: #262626;
+  --color-border-subtle: #1f1f1f;
+  --color-border-dark: #fafafa;
+  --color-status-open: #22c55e;
+  --color-danger: #ef4444;
 }
 
 @theme {
@@ -48,7 +72,7 @@
 }
 
 body {
-  background-color: #F4F1EA;
+  background-color: var(--color-bg-base);
   color: var(--color-text-body);
   font-family: var(--font-sans), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   margin: 0;
@@ -195,6 +219,246 @@ body {
   border-radius: 9999px;
   background: var(--color-accent-terracotta);
   opacity: 1;
+}
+
+.public-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px 24px;
+  background: var(--color-bg-base);
+  color: var(--color-text-body);
+}
+
+.public-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+}
+
+.public-theme-toggle {
+  display: grid;
+  width: 42px;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.public-wordmark {
+  color: var(--color-text-primary);
+  font-size: 17px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.public-wordmark span,
+.public-footer-brand {
+  color: var(--color-accent-terracotta);
+}
+
+.public-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(40px, 9vh, 84px) 0 32px;
+  text-align: center;
+}
+
+.public-monogram {
+  display: grid;
+  width: 92px;
+  aspect-ratio: 1;
+  place-items: center;
+  margin-bottom: 25px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-bg-subtle);
+  color: var(--color-forest);
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 36px;
+}
+
+.public-eyebrow {
+  margin: 0 0 10px;
+  color: var(--color-accent-terracotta);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.public-profile h1,
+.public-state h1 {
+  max-width: 100%;
+  margin: 0;
+  color: var(--color-text-primary);
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.public-slug {
+  margin: 10px 0 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.public-actions {
+  display: grid;
+  width: min(100%, 520px);
+  gap: 12px;
+  margin: 0 auto;
+}
+
+.public-action {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-size: 15px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.public-action-primary {
+  border-color: var(--color-accent-terracotta);
+  background: var(--color-accent-terracotta);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.public-action-primary:hover {
+  background: var(--color-accent-terracotta-hover);
+}
+
+.public-action-primary:active {
+  transform: scale(0.99);
+}
+
+.public-action-primary:focus-visible,
+.public-back-link:focus-visible,
+.public-topbar button:focus-visible {
+  outline: 3px solid var(--color-accent-gold);
+  outline-offset: 3px;
+}
+
+.public-information {
+  justify-content: flex-start;
+}
+
+.public-action-icon {
+  flex: 0 0 auto;
+  color: var(--color-accent-terracotta);
+  font-size: 22px;
+}
+
+.public-empty {
+  margin: 8px 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.public-footer {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-top: auto;
+  padding-top: 64px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.public-footer-brand {
+  font-weight: 700;
+}
+
+.public-state {
+  display: flex;
+  min-height: 75vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.public-state h1 {
+  max-width: 520px;
+  font-size: 30px;
+}
+
+.public-state p:not(.public-eyebrow) {
+  margin: 14px 0;
+}
+
+.public-back-link {
+  margin-top: 10px;
+  color: var(--color-accent-terracotta);
+  font-weight: 700;
+}
+
+.public-retry {
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 0 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font: inherit;
+}
+
+.public-retry:hover {
+  border-color: var(--color-accent-terracotta);
+}
+
+.public-skeleton {
+  margin: auto;
+  background: var(--color-bg-subtle);
+  animation: public-pulse 1.3s ease-in-out infinite alternate;
+}
+
+.public-skeleton-avatar {
+  width: 92px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.public-skeleton-title {
+  width: min(70%, 280px);
+  height: 30px;
+  margin-top: 24px;
+  border-radius: 6px;
+}
+
+.public-skeleton-action {
+  width: min(100%, 520px);
+  height: 58px;
+  margin-top: 14px;
+  border-radius: 12px;
+}
+
+@keyframes public-pulse {
+  to { opacity: 0.45; }
 }
 
 @media (max-width: 640px) {

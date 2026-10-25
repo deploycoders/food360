@@ -2,16 +2,22 @@
 
 import React from "react";
 import type { DaySchedule } from "@/types/settings";
-import { Clock } from "lucide-react";
+import { Clock, LoaderCircle, Save } from "lucide-react";
 
 interface ScheduleSettingsTabProps {
   schedules: DaySchedule[];
   onChange: (schedules: DaySchedule[]) => void;
+  onSave: () => void;
+  isSaving: boolean;
+  hasChanges: boolean;
 }
 
 export function ScheduleSettingsTab({
   schedules,
   onChange,
+  onSave,
+  isSaving,
+  hasChanges,
 }: ScheduleSettingsTabProps) {
   const toggleDay = (index: number) => {
     const updated = schedules.map((schedule, i) =>
@@ -26,9 +32,12 @@ export function ScheduleSettingsTab({
     field: "openTime" | "closeTime",
     value: string,
   ) => {
-    const updated = schedules.map((schedule, i) =>
-      i === index ? { ...schedule, [field]: value } : schedule,
-    );
+    const updated = schedules.map((schedule, i) => {
+      if (i !== index) return schedule;
+      const changed = { ...schedule, [field]: value };
+      changed.closesNextDay = changed.closeTime <= changed.openTime;
+      return changed;
+    });
 
     onChange(updated);
   };
@@ -139,6 +148,12 @@ export function ScheduleSettingsTab({
             </div>
           );
         })}
+      </div>
+      <div className="mt-5 flex justify-end border-t border-border/60 pt-4">
+        <button type="button" onClick={onSave} disabled={isSaving || !hasChanges} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-accent px-4 text-xs font-semibold text-accent-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+          {isSaving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          Guardar horarios
+        </button>
       </div>
     </div>
   );

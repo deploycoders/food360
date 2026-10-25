@@ -5,11 +5,8 @@ export interface Restaurant {
   name: string;
   slug: string;
   custom_domain: string | null;
-  wifi_ssid: string | null;
-  wifi_password: string | null;
   instagram_url: string | null;
   google_business_url: string | null;
-  payment_info: Record<string, unknown>;
   created_at: string;
 }
 
@@ -19,7 +16,7 @@ export const restaurantService = {
 
     const { data, error } = await supabase
       .from("restaurants")
-      .select("*")
+      .select("id, name, slug, custom_domain, instagram_url, google_business_url, created_at")
       .eq("id", id)
       .single();
 
@@ -40,7 +37,7 @@ export const restaurantService = {
 
     const { data, error } = await supabase
       .from("restaurants")
-      .select("*")
+      .select("id, name, slug, custom_domain, instagram_url, google_business_url, created_at")
       .eq("slug", slug)
       .single();
 
@@ -61,7 +58,7 @@ export const restaurantService = {
 
     const { data, error } = await supabase
       .from("restaurants")
-      .select("*")
+      .select("id, name, slug, custom_domain, instagram_url, google_business_url, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {

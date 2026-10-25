@@ -134,7 +134,7 @@ function formatDateTime(value: string | null, timezone: string): string {
 
 function EmptyWidget({ message }: { message: string }) {
   return (
-    <div className="flex min-h-28 items-center justify-center rounded-xl border border-dashed border-border px-4 text-center text-xs text-muted-foreground">
+    <div className="flex min-h-28 items-center justify-center rounded-xl text-center text-xs text-muted-foreground">
       {message}
     </div>
   );

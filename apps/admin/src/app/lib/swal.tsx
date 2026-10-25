@@ -359,3 +359,64 @@ export const confirmDeleteTable = async (
     );
   }
 };
+
+export const confirmRevokeTeamInvitation = async (
+  email: string,
+  onConfirm: () => Promise<void>,
+): Promise<boolean> => {
+  const result = await Food360Swal.fire({
+    icon: "warning",
+    iconColor: "var(--accent)",
+    title: "¿Revocar invitación?",
+    text: `La invitación enviada a ${email} dejará de funcionar. Si esta persona aún necesita acceder, tendrás que generar un enlace nuevo.`,
+    showCancelButton: true,
+    confirmButtonText: "Revocar invitación",
+    cancelButtonText: "Cancelar",
+    reverseButtons: true,
+    focusCancel: true,
+  });
+
+  if (!result.isConfirmed) return false;
+
+  try {
+    await onConfirm();
+
+    showTimedToast(
+      "Invitación revocada",
+      "success",
+      `La invitación de ${email} ya no se puede utilizar.`,
+    );
+
+    return true;
+  } catch (error) {
+    console.error("Error revocando invitación:", error);
+
+    showTimedToast(
+      "No se pudo revocar la invitación",
+      "error",
+      error instanceof Error
+        ? error.message
+        : "Ocurrió un error al revocar la invitación.",
+    );
+
+    return false;
+  }
+};
+
+export const confirmRenewTeamInvitationLink = async (
+  email: string,
+): Promise<boolean> => {
+  const result = await Food360Swal.fire({
+    icon: "warning",
+    iconColor: "var(--accent)",
+    title: "¿Generar un enlace nuevo?",
+    text: `Se generará otro enlace para ${email}. Cualquier enlace anterior dejará de funcionar.`,
+    showCancelButton: true,
+    confirmButtonText: "Generar enlace",
+    cancelButtonText: "Cancelar",
+    reverseButtons: true,
+    focusCancel: true,
+  });
+
+  return result.isConfirmed;
+};

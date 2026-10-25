@@ -1,37 +1,129 @@
 "use client";
 
-import React, { useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import {
   UtensilsCrossed,
-  Lock,
+  LockKeyhole,
   Eye,
   EyeOff,
   ArrowRight,
+  ArrowLeft,
   CheckCircle2,
   AlertCircle,
+  LoaderCircle,
+  ShieldCheck,
 } from "lucide-react";
+
+import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/context/AuthContext";
+
+type PageStatus = "checking" | "ready" | "invalid" | "completed";
+const RECOVERY_SESSION_MAX_AGE = 15 * 60 * 1000;
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+  const { passwordRecovery } = useAuth();
 
+  const [status, setStatus] = useState<PageStatus>("checking");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    const callbackUrl = new URL(window.location.href);
+    const callbackParams = new URLSearchParams(callbackUrl.hash.slice(1));
+    const callbackError =
+      callbackUrl.searchParams.get("error_description") ??
+      callbackUrl.searchParams.get("error") ??
+      callbackUrl.searchParams.get("error_code") ??
+      callbackParams.get("error_description") ??
+      callbackParams.get("error") ??
+      callbackParams.get("error_code");
+
+    if (callbackError) {
+      setStatus("invalid");
+      return;
+    }
+
+    // Supabase's PKCE callback is parsed and exchanged by createBrowserClient.
+    // AuthProvider keeps the resulting PASSWORD_RECOVERY event in memory.
+    const timeout = window.setTimeout(() => {
+      if (!passwordRecovery) {
+        setStatus((current) =>
+          current === "completed" ? current : "invalid",
+        );
+      }
+    }, 1500);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [passwordRecovery]);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!passwordRecovery) return;
+
+    const callbackUrl = new URL(window.location.href);
+    const callbackParams = new URLSearchParams(callbackUrl.hash.slice(1));
+    if (
+      callbackUrl.searchParams.has("error") ||
+      callbackUrl.searchParams.has("error_description") ||
+      callbackUrl.searchParams.has("error_code") ||
+      callbackParams.has("error") ||
+      callbackParams.has("error_description") ||
+      callbackParams.has("error_code")
+    ) {
+      setStatus("invalid");
+      return;
+    }
+
+    const recoveryAge = Date.now() - passwordRecovery.occurredAt;
+    if (recoveryAge < 0 || recoveryAge > RECOVERY_SESSION_MAX_AGE) {
+      setStatus("invalid");
+      return;
+    }
+
+    void supabase.auth.getSession().then(({ data, error }) => {
+      if (!active) return;
+
+      if (error) console.error("Error verificando sesión de recuperación:", error);
+      if (data.session?.user.id === passwordRecovery.userId && !error) {
+        setStatus("ready");
+      } else {
+        setStatus("invalid");
+      }
+    }).catch((error: unknown) => {
+      if (!active) return;
+      console.error("Error leyendo la sesión de recuperación:", error);
+      setStatus("invalid");
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [passwordRecovery, supabase]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
     setErrorMessage(null);
 
-    if (password.length < 8) {
-      setErrorMessage("La contraseña debe tener al menos 8 caracteres.");
+    if (password.length < 10) {
+      setErrorMessage("La contraseña debe tener al menos 10 caracteres.");
+      return;
+    }
+
+    if (password.length > 128) {
+      setErrorMessage("La contraseña no puede superar 128 caracteres.");
       return;
     }
 
@@ -40,168 +132,324 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    if (status !== "ready") {
+      setErrorMessage(
+        "Tu enlace no es válido o ha caducado. Solicita uno nuevo.",
+      );
+      return;
+    }
+
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+
     try {
-      setIsLoading(true);
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
+      const recoveryAge = passwordRecovery
+        ? Date.now() - passwordRecovery.occurredAt
+        : Number.POSITIVE_INFINITY;
+      const hasValidRecoverySession =
+        !sessionError &&
+        !!sessionData.session &&
+        passwordRecovery?.userId === sessionData.session.user.id &&
+        recoveryAge >= 0 &&
+        recoveryAge <= RECOVERY_SESSION_MAX_AGE;
 
-      const { error } = await supabase.auth.updateUser({
-        password,
-      });
-
-      if (error) {
-        console.error("Error actualizando contraseña:", error);
-        setErrorMessage(
-          "No se pudo actualizar la contraseña. El enlace puede haber expirado.",
-        );
+      if (!hasValidRecoverySession) {
+        setStatus("invalid");
+        setErrorMessage("Tu sesión de recuperación expiró. Solicita un enlace nuevo.");
         return;
       }
 
-      setSuccess(true);
+      const { error } = await supabase.auth.updateUser({ password });
+
+      if (error) {
+        console.error("Error actualizando contraseña:", error);
+
+        setErrorMessage(
+          "No se pudo actualizar la contraseña. Es posible que el enlace haya caducado; solicita uno nuevo e inténtalo otra vez.",
+        );
+
+        return;
+      }
+
+      setPassword("");
+      setConfirmPassword("");
+      setStatus("completed");
+
+      // Tras recuperar la cuenta, exigimos un nuevo inicio de sesión.
+      const { error: signOutError } = await supabase.auth.signOut({
+        scope: "local",
+      });
+
+      if (signOutError) {
+        console.warn(
+          "La contraseña cambió, pero no se pudo cerrar la sesión local:",
+          signOutError,
+        );
+      }
+    } catch (error) {
+      console.error("Error inesperado al cambiar contraseña:", error);
+
+      setErrorMessage("Ocurrió un error de conexión. Inténtalo nuevamente.");
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 sm:p-6 transition-colors duration-200">
-      <div className="w-full max-w-md bg-card border border-border rounded-2xl p-8 sm:p-10 shadow-2xl transition-colors duration-200">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-accent text-accent-foreground shadow-lg shadow-accent/25 mb-4">
-            <UtensilsCrossed className="w-7 h-7" />
-          </div>
-
-          <h1 className="text-2xl font-bold text-foreground mb-1 tracking-tight">
-            Food<span className="text-accent">360</span> Admin
-          </h1>
-
-          <p className="text-sm text-muted-foreground">
-            Establece una nueva contraseña
-          </p>
-        </div>
-
-        {success ? (
-          <div className="space-y-6">
-            <div className="rounded-xl border border-border bg-muted/40 p-5 text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent">
-                <CheckCircle2 className="h-6 w-6" />
-              </div>
-
-              <h2 className="text-sm font-semibold text-foreground mb-2">
-                Contraseña actualizada
-              </h2>
-
-              <p className="text-xs leading-5 text-muted-foreground">
-                Tu contraseña se actualizó correctamente. Ya puedes iniciar
-                sesión con tu nueva contraseña.
-              </p>
+    <main className="flex min-h-screen items-center justify-center bg-background p-4 transition-colors sm:p-6">
+      <div className="w-full max-w-md">
+        <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-xl shadow-black/[0.04]">
+          <div className="px-6 pb-2 pt-8 text-center sm:px-9 sm:pt-10">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-accent-foreground shadow-lg shadow-accent/20">
+              <UtensilsCrossed className="h-7 w-7" />
             </div>
 
-            <button
-              type="button"
-              onClick={() => router.push("/login")}
-              className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-accent text-accent-foreground hover:opacity-95 transition-all flex items-center justify-center gap-2"
-            >
-              Ir al inicio de sesión
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Food<span className="text-accent">360</span> Admin
+            </h1>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              Seguridad de tu cuenta
+            </p>
           </div>
-        ) : (
-          <>
-            {errorMessage && (
-              <div className="mb-5 p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2.5">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-2">
-                  Nueva contraseña
-                </label>
+          <div className="px-6 pb-8 pt-6 sm:px-9 sm:pb-9">
+            {status === "checking" ? (
+              <div className="py-8 text-center">
+                <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-accent" />
 
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <p className="mt-4 text-sm font-semibold text-foreground">
+                  Verificando enlace
+                </p>
 
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    required
-                    minLength={8}
-                    autoComplete="new-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-border bg-muted/40 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((value) => !value)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  Mínimo 8 caracteres.
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Estamos comprobando la sesión de recuperación.
                 </p>
               </div>
+            ) : status === "invalid" ? (
+              <div className="space-y-5 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  <AlertCircle className="h-6 w-6" />
+                </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-2">
-                  Confirmar contraseña
-                </label>
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">
+                    Enlace no válido o caducado
+                  </h2>
 
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    Solicita un nuevo correo de recuperación e intenta abrir su
+                    enlace desde el mismo navegador.
+                  </p>
+                </div>
 
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    required
-                    minLength={8}
-                    autoComplete="new-password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-border bg-muted/40 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all"
-                  />
+                <button
+                  type="button"
+                  onClick={() => router.push("/forgot-password")}
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-semibold text-accent-foreground transition-opacity hover:opacity-90"
+                >
+                  Solicitar nuevo enlace
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => router.push("/login")}
+                  className="inline-flex h-9 items-center justify-center gap-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Volver al login
+                </button>
+              </div>
+            ) : status === "completed" ? (
+              <div className="space-y-6 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="h-6 w-6" />
+                </div>
+
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">
+                    Contraseña actualizada
+                  </h2>
+
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    Tu contraseña se ha cambiado correctamente. Inicia sesión
+                    con tus nuevas credenciales para continuar.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => router.replace("/login")}
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-semibold text-accent-foreground transition-opacity hover:opacity-90"
+                >
+                  Ir al inicio de sesión
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="mb-6">
+                  <h2 className="text-base font-semibold text-foreground">
+                    Crea una nueva contraseña
+                  </h2>
+
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    Elige una contraseña segura que no utilices en otros
+                    servicios.
+                  </p>
+                </div>
+
+                {errorMessage && (
+                  <div
+                    role="alert"
+                    className="mb-5 flex items-start gap-2.5 rounded-xl border border-destructive/20 bg-destructive/5 p-3.5 text-xs leading-5 text-destructive"
+                  >
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{errorMessage}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <label
+                      htmlFor="new-password"
+                      className="mb-2 block text-xs font-semibold text-foreground"
+                    >
+                      Nueva contraseña
+                    </label>
+
+                    <div className="relative">
+                      <LockKeyhole className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
+                      <input
+                        id="new-password"
+                        type={showPassword ? "text" : "password"}
+                        required
+                        minLength={10}
+                        maxLength={128}
+                        autoComplete="new-password"
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        placeholder="Mínimo 10 caracteres"
+                        disabled={isSubmitting}
+                        className="h-11 w-full rounded-xl border border-input bg-background pl-10 pr-11 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/60 focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:opacity-50"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((value) => !value)}
+                        aria-label={
+                          showPassword
+                            ? "Ocultar contraseña"
+                            : "Mostrar contraseña"
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">
+                      Utiliza al menos 10 caracteres.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="confirm-password"
+                      className="mb-2 block text-xs font-semibold text-foreground"
+                    >
+                      Confirmar contraseña
+                    </label>
+
+                    <div className="relative">
+                      <LockKeyhole className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
+                      <input
+                        id="confirm-password"
+                        type={showConfirmPassword ? "text" : "password"}
+                        required
+                        minLength={10}
+                        maxLength={128}
+                        autoComplete="new-password"
+                        value={confirmPassword}
+                        onChange={(event) =>
+                          setConfirmPassword(event.target.value)
+                        }
+                        placeholder="Repite la contraseña"
+                        disabled={isSubmitting}
+                        className="h-11 w-full rounded-xl border border-input bg-background pl-10 pr-11 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/60 focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:opacity-50"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowConfirmPassword((value) => !value)
+                        }
+                        aria-label={
+                          showConfirmPassword
+                            ? "Ocultar confirmación"
+                            : "Mostrar confirmación"
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
 
                   <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword((value) => !value)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    type="submit"
+                    disabled={
+                      isSubmitting ||
+                      password.length < 10 ||
+                      confirmPassword.length < 10
+                    }
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-xs font-semibold text-accent-foreground shadow-sm shadow-accent/20 transition-all hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {showConfirmPassword ? (
-                      <EyeOff className="w-4 h-4" />
+                    {isSubmitting ? (
+                      <>
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                        Actualizando contraseña...
+                      </>
                     ) : (
-                      <Eye className="w-4 h-4" />
+                      <>
+                        Guardar nueva contraseña
+                        <ArrowRight className="h-4 w-4" />
+                      </>
                     )}
                   </button>
-                </div>
-              </div>
+                </form>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-accent text-accent-foreground hover:opacity-95 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-md shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  "Actualizando..."
-                ) : (
-                  <>
-                    Cambiar contraseña
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </form>
-          </>
-        )}
+                <div className="mt-6 flex items-start gap-3 rounded-xl border border-border bg-muted/30 p-3.5">
+                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+
+                  <p className="text-[11px] leading-5 text-muted-foreground">
+                    No compartas tu contraseña. Food360 nunca necesita que se la
+                    envíes a un administrador.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <p className="mt-5 text-center text-[11px] text-muted-foreground">
+          Food360 Admin · Acceso seguro al restaurante
+        </p>
       </div>
-    </div>
+    </main>
   );
 }

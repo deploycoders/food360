@@ -1,29 +1,40 @@
-# Food360 Linktree
+# Food360 Client
 
-Digital restaurant hub and ordering flow for the Food360 workspace.
+Public restaurant profiles are resolved by slug at `/<slug>`. The page reads
+the public restaurant endpoint from `apps/api` on the server and only renders
+fields returned by that endpoint.
 
-## Getting Started
+## Local development
 
-From the repository root, install dependencies and run this app:
+Start the API and set its URL for Client in `apps/client/.env.local`:
 
-```sh
-pnpm install
-pnpm --filter linktree dev
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3002
 ```
 
-Open [http://localhost:3003](http://localhost:3003).
-
-To persist orders through `apps/api`, copy `.env.example` to `.env.local` and
-set `NEXT_PUBLIC_RESTAURANT_ID` to the restaurant UUID in Supabase. Set
-`NEXT_PUBLIC_API_URL=http://localhost:3002` for the local API. Without those
-values, the menu remains usable in local mode without persistence.
-
-Useful workspace commands:
+Then run the Client from the repository root:
 
 ```sh
-pnpm --filter linktree check-types
-pnpm --filter linktree lint
-pnpm --filter linktree build
+pnpm --filter api dev
+pnpm --filter client dev
 ```
 
-The app uses [Next.js](https://nextjs.org) and the App Router.
+Open `http://localhost:3000/<restaurant-slug>`. The API uses the Supabase
+anonymous key and honors the existing RLS policies. If anonymous reads are not
+allowed for a restaurant, the API will not bypass those policies. No
+service-role key belongs in Client configuration.
+
+The current public profile fields are the restaurant name, slug, phone,
+address, and currency. The database repository has no public-link collection,
+publication flag, description, logo, or cover image contract yet, so the page
+does not fabricate those values. The existing `/menu` and `/cart` ordering
+routes remain available separately; their current sample catalog is not
+connected to the restaurant slug profile.
+
+## Workspace checks
+
+```sh
+pnpm --filter client lint
+pnpm --filter client check-types
+pnpm --filter client build
+```

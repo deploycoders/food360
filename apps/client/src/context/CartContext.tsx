@@ -9,6 +9,7 @@ interface CartContextType {
   removeItem: (menuItemId: string) => void;
   updateQuantity: (menuItemId: string, quantity: number) => void;
   clearCart: () => void;
+  setRestaurantScope: (scope: string) => void;
   totalItems: number;
   totalPrice: number;
   isInCart: (menuItemId: string) => boolean;
@@ -18,6 +19,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const CART_STORAGE_KEY = 'restaurant-cart';
+const CART_SCOPE_STORAGE_KEY = 'restaurant-cart-scope';
 
 function loadCartFromStorage(): CartItem[] {
   if (typeof window === 'undefined') return [];
@@ -41,11 +43,17 @@ function saveCartToStorage(items: CartItem[]) {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [restaurantScope, setRestaurantScopeState] = useState<string | null>(null);
 
   // Hydrate from sessionStorage on mount
   useEffect(() => {
     queueMicrotask(() => {
       setItems(loadCartFromStorage());
+      try {
+        setRestaurantScopeState(sessionStorage.getItem(CART_SCOPE_STORAGE_KEY));
+      } catch {
+        setRestaurantScopeState(null);
+      }
       setIsHydrated(true);
     });
   }, []);
@@ -56,6 +64,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
       saveCartToStorage(items);
     }
   }, [items, isHydrated]);
+
+  useEffect(() => {
+    if (!isHydrated || !restaurantScope) return;
+    let storedScope: string | null = null;
+    try {
+      storedScope = sessionStorage.getItem(CART_SCOPE_STORAGE_KEY);
+    } catch {
+      storedScope = null;
+    }
+    if (storedScope !== restaurantScope) {
+      queueMicrotask(() => setItems([]));
+      try {
+        sessionStorage.setItem(CART_STORAGE_KEY, JSON.stringify([]));
+        sessionStorage.setItem(CART_SCOPE_STORAGE_KEY, restaurantScope);
+      } catch {
+        // Storage is optional; the in-memory cart remains scoped.
+      }
+    }
+  }, [isHydrated, restaurantScope]);
 
   const addItem = useCallback((menuItem: MenuItem) => {
     setItems((prev) => {
@@ -91,6 +118,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([]);
   }, []);
 
+  const setRestaurantScope = useCallback((scope: string) => {
+    setRestaurantScopeState(scope);
+  }, []);
+
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
 
@@ -115,6 +146,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         removeItem,
         updateQuantity,
         clearCart,
+        setRestaurantScope,
         totalItems,
         totalPrice,
         isInCart,

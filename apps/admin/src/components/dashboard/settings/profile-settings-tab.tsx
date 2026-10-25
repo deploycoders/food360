@@ -10,16 +10,24 @@ import {
   DollarSign,
   Percent,
   Globe,
+  LoaderCircle,
+  Save,
 } from "lucide-react";
 
 interface ProfileSettingsTabProps {
   data: BusinessProfile;
   onChange: (updated: BusinessProfile) => void;
+  onSave: () => void;
+  isSaving: boolean;
+  hasChanges: boolean;
 }
 
 export function ProfileSettingsTab({
   data,
   onChange,
+  onSave,
+  isSaving,
+  hasChanges,
 }: ProfileSettingsTabProps) {
   const handleInputChange = (
     field: keyof BusinessProfile,
@@ -84,7 +92,7 @@ export function ProfileSettingsTab({
                 value={data.phone}
                 onChange={(e) => handleInputChange("phone", e.target.value)}
                 className="w-full rounded-lg border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent focus:bg-card focus:outline-none transition-all"
-                placeholder="+34 912 345 678"
+                placeholder="0424-1234567"
               />
             </div>
           </div>
@@ -118,7 +126,7 @@ export function ProfileSettingsTab({
                 value={data.address}
                 onChange={(e) => handleInputChange("address", e.target.value)}
                 className="w-full rounded-lg border border-border bg-muted/20 pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent focus:bg-card focus:outline-none transition-all"
-                placeholder="Calle Gran Vía 42, 28013 Madrid"
+                placeholder="Av. Principal 123, Ciudad, Estado"
               />
             </div>
           </div>
@@ -200,6 +208,12 @@ export function ProfileSettingsTab({
             </div>
           </div>
         </div>
+      </div>
+      <div className="flex justify-end">
+        <button type="button" onClick={onSave} disabled={isSaving || !hasChanges} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-accent px-4 text-xs font-semibold text-accent-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+          {isSaving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          Guardar perfil
+        </button>
       </div>
     </div>
   );

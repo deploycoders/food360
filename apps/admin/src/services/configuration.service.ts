@@ -7,6 +7,15 @@ interface ApiResponse<T> {
   error?: string;
 }
 
+function unwrapResponse<T>(response: ApiResponse<T>): T {
+  if (!response.success || response.data === undefined || response.data === null) {
+    throw new Error(
+      response.error || "No se pudo completar la operación de configuración.",
+    );
+  }
+  return response.data;
+}
+
 interface ApiRestaurantConfiguration {
   id: string;
   name: string;
@@ -67,6 +76,7 @@ function mapSchedules(rows: ApiRestaurantSchedule[]): DaySchedule[] {
       isOpen: row?.is_open ?? false,
       openTime: row?.open_time?.slice(0, 5) ?? "09:00",
       closeTime: row?.close_time?.slice(0, 5) ?? "18:00",
+      closesNextDay: row?.closes_next_day ?? false,
     };
   });
 }
@@ -76,7 +86,7 @@ export const configurationService = {
     const response =
       await apiFetch<ApiResponse<ApiRestaurantConfiguration>>("/configuration");
 
-    return mapProfile(response.data);
+    return mapProfile(unwrapResponse(response));
   },
 
   async updateProfile(profile: BusinessProfile): Promise<BusinessProfile> {
@@ -107,7 +117,7 @@ export const configurationService = {
       },
     );
 
-    return mapProfile(response.data);
+    return mapProfile(unwrapResponse(response));
   },
 
   async getSchedules(): Promise<DaySchedule[]> {
@@ -115,29 +125,46 @@ export const configurationService = {
       "/configuration/schedule",
     );
 
-    return mapSchedules(response.data ?? []);
+    return mapSchedules(unwrapResponse(response) ?? []);
   },
 
-  async updateSchedules(schedules: DaySchedule[]): Promise<void> {
-    const days: ApiRestaurantSchedule[] = schedules.map((schedule) => {
+  async updateSchedules(schedules: DaySchedule[]): Promise<DaySchedule[]> {
+    if (schedules.length !== DAYS.length) {
+      throw new Error("Debes configurar exactamente los siete días de la semana.");
+    }
+    const schedulesByDay = new Map(
+      schedules.map((schedule) => [schedule.day, schedule]),
+    );
+    if (
+      schedulesByDay.size !== DAYS.length ||
+      DAYS.some(({ day }) => !schedulesByDay.has(day))
+    ) {
+      throw new Error("La configuración debe contener una sola entrada para cada día.");
+    }
+
+    const days: ApiRestaurantSchedule[] = DAYS.map((day) => {
+      const schedule = schedulesByDay.get(day.day)!;
       const isOpen = schedule.isOpen;
 
       return {
-        day_of_week:
-          DAYS.find((day) => day.day === schedule.day)?.dayOfWeek ?? 0,
+        day_of_week: day.dayOfWeek,
         is_open: isOpen,
         open_time: isOpen ? schedule.openTime : null,
         close_time: isOpen ? schedule.closeTime : null,
-        closes_next_day: isOpen && schedule.closeTime <= schedule.openTime,
+        closes_next_day:
+          isOpen &&
+          (schedule.closesNextDay ?? schedule.closeTime <= schedule.openTime),
       };
     });
 
-    await apiFetch<ApiResponse<ApiRestaurantSchedule[]>>(
+    const response = await apiFetch<ApiResponse<ApiRestaurantSchedule[]>>(
       "/configuration/schedule",
       {
         method: "PUT",
         body: JSON.stringify({ days }),
       },
     );
+
+    return mapSchedules(unwrapResponse(response) ?? []);
   },
 };

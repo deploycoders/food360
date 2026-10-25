@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480">
+  <rect width="640" height="480" fill="#f2f0e9"/>
+  <g fill="none" stroke="#9a9a87" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="320" cy="230" r="105"/>
+    <circle cx="320" cy="230" r="78"/>
+    <path d="M280 226c16-22 43-22 59 0 10 13 8 30-5 40-18 13-47 4-54-15"/>
+    <path d="M322 175c8 12 11 23 8 34"/>
+  </g>
+  <text x="320" y="390" fill="#737367" font-family="Arial, sans-serif" font-size="19" text-anchor="middle">Food360</text>
+</svg>

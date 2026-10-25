@@ -21,21 +21,27 @@ function applyTheme(effectiveTheme: "dark" | "light") {
   root.classList.toggle("dark", effectiveTheme === "dark");
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("light");
+export function ThemeProvider({
+  children,
+  defaultTheme = "light",
+}: {
+  children: ReactNode;
+  defaultTheme?: Theme;
+}) {
+  const [theme, setThemeState] = useState<Theme>(defaultTheme);
 
   const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("light");
 
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const savedTheme = (localStorage.getItem(STORAGE_KEY) as Theme) || "light";
+    const savedTheme = (localStorage.getItem(STORAGE_KEY) as Theme) || defaultTheme;
 
     queueMicrotask(() => {
       setThemeState(savedTheme);
       setMounted(true);
     });
-  }, []);
+  }, [defaultTheme]);
 
   useEffect(() => {
     if (!mounted) return;

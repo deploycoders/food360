@@ -1,13 +1,14 @@
-export type MenuCategory = 
-  | 'summer-bites' 
-  | 'happy-hour' 
-  | 'fan-tuan' 
-  | 'cold-appetizers' 
-  | 'hot-appetizers' 
-  | 'dim-sum' 
-  | 'main-dishes' 
-  | 'drinks' 
-  | 'desserts';
+export type MenuCategory =
+  | "summer-bites"
+  | "happy-hour"
+  | "fan-tuan"
+  | "cold-appetizers"
+  | "hot-appetizers"
+  | "dim-sum"
+  | "main-dishes"
+  | "drinks"
+  | "desserts"
+  | (string & {});
 
 export interface MenuItem {
   id: string;
@@ -50,11 +51,11 @@ export interface OrderPayload {
   }[];
   customer: CustomerData;
   originId: string;
-  originType: 'mesa' | 'delivery' | 'unknown';
+  originType: "mesa" | "delivery" | "unknown";
   total: number;
   itemCount: number;
   createdAt: string;
-  status: 'pending';
+  status: "pending";
 }
 
 export interface RestaurantInfo {

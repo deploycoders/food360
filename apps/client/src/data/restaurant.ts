@@ -13,8 +13,8 @@ export const restaurant: RestaurantInfo = {
   whatsapp: '+584141234567',
   whatsappMessage: '¡Hola 360 food! Deseo hacer una consulta sobre el menú.',
   wifi: {
-    ssid: '360food_Guest_5G',
-    password: 'QuaExperience2026',
+    ssid: '',
+    password: '',
   },
   socialLinks: [
     {

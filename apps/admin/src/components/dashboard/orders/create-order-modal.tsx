@@ -427,7 +427,7 @@ export function CreateOrderModal({
                       autoComplete="tel"
                       value={phone}
                       onChange={(event) => setPhone(event.target.value)}
-                      placeholder="+34 600 000 000"
+                      placeholder="0424-1234567"
                       className="h-11 w-full rounded-xl border border-border bg-card px-3.5 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-primary/15"
                     />
                   </label>

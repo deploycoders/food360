@@ -7,3 +7,4 @@ export * from "./restaurant-member";
 export * from "./common";
 export * from "./table";
 export * from "./reservation";
+export * from "./public-restaurant";

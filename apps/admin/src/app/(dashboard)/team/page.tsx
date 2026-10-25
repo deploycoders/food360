@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { Mail, Users } from "lucide-react";
 
 import type { TeamMember } from "@/types/team";
-import type { AppRole, Permission } from "@food360/types";
+import type { AppRole } from "@food360/types";
 import { hasPermission } from "@food360/types";
 
 import { TeamHeader } from "@/components/dashboard/team/team-header";
@@ -13,12 +14,18 @@ import { InviteMemberModal } from "@/components/dashboard/team/invite-member-mod
 import { TeamProfileDrawer } from "@/components/dashboard/team/team-profile-drawer";
 
 import { useRestaurant } from "@/context/RestaurantContext";
+
 import {
   getTeamMembers,
+  inviteTeamMember,
   updateTeamMemberStatus,
   updateTeamMemberRole,
 } from "@/services/team.service";
+
 import { formatLastConnection } from "@/lib/hooks/team-clock";
+import { TeamInvitations } from "@/components/dashboard/team/team-invitations";
+
+type TeamView = "members" | "invitations";
 
 export default function TeamPage() {
   const { restaurantId, loading: restaurantLoading, role } = useRestaurant();
@@ -26,9 +33,14 @@ export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [activeView, setActiveView] = useState<TeamView>("members");
+
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+
+  const [teamRefreshVersion, setTeamRefreshVersion] = useState(0);
+  const [invitationRefreshVersion, setInvitationRefreshVersion] = useState(0);
 
   const userRole = role as AppRole;
 
@@ -45,6 +57,10 @@ export default function TeamPage() {
   const canManageStatus = role === "owner";
   const canInviteAdmin = role === "owner";
 
+  // ─────────────────────────────────────────────
+  // Cargar miembros
+  // ─────────────────────────────────────────────
+
   useEffect(() => {
     if (restaurantLoading) return;
 
@@ -55,12 +71,15 @@ export default function TeamPage() {
     }
 
     const currentRestaurantId = restaurantId;
+    let cancelled = false;
 
     async function loadTeam() {
       try {
         setLoading(true);
 
         const data = await getTeamMembers(currentRestaurantId);
+
+        if (cancelled) return;
 
         const mappedMembers: TeamMember[] = data.map((member) => {
           const profile = member.profile;
@@ -82,47 +101,54 @@ export default function TeamPage() {
 
         setMembers(mappedMembers);
       } catch (error) {
-        console.error("Error loading team:", error);
+        if (cancelled) return;
+
+        console.error("Error al cargar los miembros:", error);
         setMembers([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
-    loadTeam();
-  }, [restaurantId, restaurantLoading, canViewTeam]);
+    void loadTeam();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [restaurantId, restaurantLoading, canViewTeam, teamRefreshVersion]);
+
+  // ─────────────────────────────────────────────
+  // Activar / desactivar miembro
+  // ─────────────────────────────────────────────
 
   const handleToggleStatus = async (id: string) => {
     if (!canManageStatus) return;
 
     const member = members.find((item) => item.id === id);
 
-    if (!member) return;
-
-    // El owner no debe poder ser desactivado desde la UI.
-    if (member.role === "owner") return;
+    if (!member || member.role === "owner") return;
 
     const nextIsActive = !member.isActive;
 
     try {
       await updateTeamMemberStatus(id, nextIsActive);
 
-      setMembers((prev) =>
-        prev.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                isActive: nextIsActive,
-              }
-            : item,
+      setMembers((previous) =>
+        previous.map((item) =>
+          item.id === id ? { ...item, isActive: nextIsActive } : item,
         ),
       );
     } catch (error) {
-      console.error("Error updating team member status:", error);
-
+      console.error("Error al actualizar el estado:", error);
       throw error;
     }
   };
+
+  // ─────────────────────────────────────────────
+  // Modificar rol
+  // ─────────────────────────────────────────────
 
   const handleUpdateRole = async (
     id: string,
@@ -132,38 +158,46 @@ export default function TeamPage() {
 
     const member = members.find((item) => item.id === id);
 
-    if (!member) return;
-
-    // El owner no puede ser modificado
-    if (member.role === "owner") return;
+    if (!member || member.role === "owner") return;
 
     try {
       await updateTeamMemberRole(id, newRole);
 
-      setMembers((prev) =>
-        prev.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                role: newRole,
-              }
-            : item,
+      setMembers((previous) =>
+        previous.map((item) =>
+          item.id === id ? { ...item, role: newRole } : item,
         ),
       );
 
       setSelectedMember((current) =>
-        current && current.id === id
-          ? {
-              ...current,
-              role: newRole,
-            }
-          : current,
+        current && current.id === id ? { ...current, role: newRole } : current,
       );
     } catch (error) {
-      console.error("Error updating team member role:", error);
+      console.error("Error al actualizar el rol:", error);
       throw error;
     }
   };
+
+  // ─────────────────────────────────────────────
+  // Crear invitación
+  // ─────────────────────────────────────────────
+
+  const handleInvite = async (
+    memberData: Parameters<typeof inviteTeamMember>[0],
+  ) => {
+    const result = await inviteTeamMember(memberData);
+
+    // Refrescar ambas vistas una vez confirmada la operación.
+    setTeamRefreshVersion((version) => version + 1);
+    setInvitationRefreshVersion((version) => version + 1);
+
+    // El modal necesita el resultado para mostrar el enlace.
+    return result;
+  };
+
+  // ─────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────
 
   if (!canViewTeam && !restaurantLoading) {
     return null;
@@ -176,26 +210,97 @@ export default function TeamPage() {
         canInvite={canInvite}
       />
 
-      {restaurantLoading || loading ? (
-        <TeamCardsSkeleton />
-      ) : (
-        <TeamCards
-          members={members}
-          onToggleStatus={handleToggleStatus}
-          onSelectMember={(member) => setSelectedMember(member)}
-          canManageStatus={canManageStatus}
-        />
+      {/* Selector de vistas */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">
+            Gestión del equipo
+          </h2>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            Administra a los miembros y controla las invitaciones de acceso.
+          </p>
+        </div>
+
+        <div
+          role="tablist"
+          aria-label="Vistas del equipo"
+          className="inline-flex w-full items-center gap-1 rounded-xl border border-border bg-muted/40 p-1 sm:w-auto"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeView === "members"}
+            onClick={() => setActiveView("members")}
+            className={`inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors sm:flex-none ${
+              activeView === "members"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Users className="h-4 w-4" />
+            Miembros
+            <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">
+              {members.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeView === "invitations"}
+            onClick={() => setActiveView("invitations")}
+            className={`inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors sm:flex-none ${
+              activeView === "invitations"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Mail className="h-4 w-4" />
+            Invitaciones
+          </button>
+        </div>
+      </div>
+
+      {/* Vista de miembros */}
+      {activeView === "members" && (
+        <section role="tabpanel" aria-label="Miembros del equipo">
+          {restaurantLoading || loading ? (
+            <TeamCardsSkeleton />
+          ) : (
+            <TeamCards
+              members={members}
+              onToggleStatus={handleToggleStatus}
+              onSelectMember={(member) => setSelectedMember(member)}
+              canManageStatus={canManageStatus}
+            />
+          )}
+        </section>
       )}
 
+      {/* Vista de invitaciones */}
+      {activeView === "invitations" && (
+        <section role="tabpanel" aria-label="Invitaciones del equipo">
+          {restaurantLoading ? (
+            <TeamCardsSkeleton />
+          ) : (
+            <TeamInvitations
+              canManageInvitations={canInvite}
+              refreshKey={invitationRefreshVersion}
+            />
+          )}
+        </section>
+      )}
+
+      {/* Modal compartido por ambas vistas */}
       <InviteMemberModal
         isOpen={isInviteModalOpen}
         onClose={() => setIsInviteModalOpen(false)}
         canInviteAdmin={canInviteAdmin}
-        onInvite={() => {
-          setIsInviteModalOpen(false);
-        }}
+        onInvite={handleInvite}
       />
 
+      {/* Perfil del miembro seleccionado */}
       <TeamProfileDrawer
         member={selectedMember}
         isOpen={!!selectedMember}

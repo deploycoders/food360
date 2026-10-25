@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
+  passwordRecovery: { userId: string; occurredAt: number } | null;
   signOut: () => Promise<void>;
 }
 
@@ -21,25 +22,35 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [passwordRecovery, setPasswordRecovery] = useState<{
+    userId: string;
+    occurredAt: number;
+  } | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
-
-    supabase.auth.getUser().then(({ data, error }) => {
-      if (error) {
-        setUser(null);
-      } else {
-        setUser(data.user);
-      }
-
-      setLoading(false);
-    });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+
+      if (_event === "PASSWORD_RECOVERY" && session) {
+        setPasswordRecovery({
+          userId: session.user.id,
+          occurredAt: Date.now(),
+        });
+      } else if (_event === "SIGNED_IN" || _event === "SIGNED_OUT") {
+        setPasswordRecovery(null);
+      }
     });
+
+    void supabase.auth
+      .getUser()
+      .then(({ data, error }) => {
+        setUser(error ? null : data.user);
+      })
+      .finally(() => setLoading(false));
 
     return () => {
       subscription.unsubscribe();
@@ -94,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         loading,
+        passwordRecovery,
         signOut,
       }}
     >

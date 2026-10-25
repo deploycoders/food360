@@ -6,7 +6,7 @@ interface WifiModalProps {
   isOpen: boolean;
   onClose: () => void;
   ssid: string;
-  password: string;
+  password?: string | null;
 }
 
 export default function WifiModal({ isOpen, onClose, ssid, password }: WifiModalProps) {
@@ -82,6 +82,7 @@ export default function WifiModal({ isOpen, onClose, ssid, password }: WifiModal
         </div>
 
         {/* Password */}
+        {password ? (
         <div className="mb-5">
           <label className="text-[11px] font-medium uppercase tracking-[0.05em] text-[var(--color-text-subtle)] mb-1 block">
             Contraseña
@@ -98,6 +99,11 @@ export default function WifiModal({ isOpen, onClose, ssid, password }: WifiModal
             </button>
           </div>
         </div>
+        ) : (
+          <p className="mb-5 text-center text-xs text-[var(--color-text-muted)]">
+            Esta red no tiene una contraseña configurada.
+          </p>
+        )}
 
         {/* Botón */}
         <button
