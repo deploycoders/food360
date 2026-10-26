@@ -453,17 +453,15 @@ dashboardRouter.get("/summary", async (req: Request, res: Response) => {
     if (recentTablesResult.error) throw recentTablesResult.error;
 
     const customerMap = new Map(
-      (customersResult.data ?? []).map((customer) => [
-        customer.id,
-        customer.full_name,
-      ]),
+      (customersResult.data ?? []).map(
+        (customer) => [customer.id, customer.full_name] as const,
+      ),
     );
 
     const recentTableMap = new Map(
-      (recentTablesResult.data ?? []).map((table) => [
-        table.id,
-        table.table_number,
-      ]),
+      (recentTablesResult.data ?? []).map(
+        (table) => [table.id, table.table_number] as const,
+      ),
     );
 
     const changePercent =
@@ -504,10 +502,12 @@ dashboardRouter.get("/summary", async (req: Request, res: Response) => {
           sales: salesByDay.get(day) ?? 0,
         })),
 
-        orderStatuses: Array.from(statusCounts.entries()).map(([status, count]) => ({
-          status,
-          count,
-        })),
+        orderStatuses: Array.from(statusCounts.entries()).map(
+          ([status, count]) => ({
+            status,
+            count,
+          }),
+        ),
 
         popularProducts: Array.from(popularProductsMap.values())
           .sort((a, b) => b.quantity - a.quantity || b.revenue - a.revenue)
