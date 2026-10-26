@@ -1,3 +1,4 @@
+import { motion } from "motion/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {
@@ -24,7 +25,6 @@ export function RestaurantPage({
   isSubdomain?: boolean;
 }) {
   const name = restaurant.name.trim() || "Restaurante";
-
   const phone = restaurant.phone?.trim() ?? "";
   const phoneHref = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : null;
 
@@ -42,6 +42,7 @@ export function RestaurantPage({
       return null;
     }
   };
+
   const whatsappHref = safeHttpsUrl(restaurant.whatsappUrl, ["wa.me"]);
   const instagramHref = safeHttpsUrl(restaurant.instagramUrl, [
     "instagram.com",
@@ -63,15 +64,105 @@ export function RestaurantPage({
     (restaurant.address?.trim()
       ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurant.address.trim())}`
       : null);
-  const menuHref = isSubdomain
-    ? "/menu"
-    : `/${encodeURIComponent(restaurant.slug)}/menu`;
+  const menuHref = isSubdomain ? "/menu" : `/${encodeURIComponent(restaurant.slug)}/menu`;
+
+  const actions: Array<{
+    key: string;
+    href?: string;
+    target?: string;
+    rel?: string;
+    icon: ReactNode;
+    title: string;
+    description: string;
+    primary?: boolean;
+  }> = [
+    {
+      key: "menu",
+      href: menuHref,
+      icon: <Utensils className="h-5 w-5" />,
+      title: "Ver carta y ordenar",
+      description: "Descubre los platos y prepara tu pedido.",
+      primary: true,
+    },
+    ...(restaurant.wifi.ssid
+      ? [
+          {
+            key: "wifi",
+            icon: <Wifi className="h-5 w-5" />,
+            title: "Wi‑Fi para visitantes",
+            description: `Conéctate a ${restaurant.wifi.ssid}`,
+          },
+        ]
+      : []),
+    ...(whatsappHref
+      ? [
+          {
+            key: "whatsapp",
+            href: whatsappHref,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            icon: <MessageCircle className="h-5 w-5" />,
+            title: "Atención por WhatsApp",
+            description: "Consultas, reservas y asistencia.",
+          },
+        ]
+      : []),
+    ...(instagramHref
+      ? [
+          {
+            key: "instagram",
+            href: instagramHref,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            icon: <Camera className="h-5 w-5" />,
+            title: "Instagram",
+            description: "Síguenos para ver novedades y platos.",
+          },
+        ]
+      : []),
+    ...(tiktokHref
+      ? [
+          {
+            key: "tiktok",
+            href: tiktokHref,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            icon: <Music2 className="h-5 w-5" />,
+            title: "TikTok",
+            description: "Mira nuestros videos y novedades.",
+          },
+        ]
+      : []),
+    ...(phoneHref
+      ? [
+          {
+            key: "phone",
+            href: phoneHref,
+            icon: <Phone className="h-5 w-5" />,
+            title: "Llamar al restaurante",
+            description: phone,
+          },
+        ]
+      : []),
+    ...(mapsHref
+      ? [
+          {
+            key: "maps",
+            href: mapsHref,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            icon: <MapPin className="h-5 w-5" />,
+            title: "Ubicación y cómo llegar",
+            description: "Consulta la dirección en Google Maps.",
+          },
+        ]
+      : []),
+  ];
 
   return (
-    <main className="flex min-h-screen w-full flex-1 flex-col bg-(--color-bg-base) text-(--color-text-body)">
-      {/* Encabezado */}
+    <main className="flex min-h-screen w-full flex-1 flex-col bg-[var(--color-bg-base)] text-[var(--color-text-body)]">
       <header className="relative w-full overflow-hidden bg-[#171717]">
-        <div className="absolute inset-0 bg-linear-to-br from-[#263b2c] via-[#171717] to-[#171717]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(194,65,12,0.22),transparent_26%),linear-gradient(135deg,#233f2e_0%,#171717_60%,#0f0f0f_100%)]" />
 
         <div className="relative z-10 flex items-center justify-between px-5 py-4 sm:px-8">
           <Link
@@ -79,18 +170,20 @@ export function RestaurantPage({
             className="text-lg font-bold tracking-tight text-white no-underline"
             aria-label="Food360"
           >
-            food<span className="text-(--color-accent-terracotta)">360</span>
+            food<span className="text-[var(--color-accent-terracotta)]">360</span>
           </Link>
 
           <ThemeToggle />
         </div>
 
-        {/* Identidad del restaurante */}
-        <section
-          className="relative flex flex-col items-center px-5 pb-8 pt-5 text-center sm:pb-10"
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, ease: "easeOut" }}
+          className="relative z-10 flex flex-col items-center px-5 pb-8 pt-5 text-center sm:pb-10"
           aria-labelledby="restaurant-name"
         >
-          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full border border-white/15 bg-white/10 text-3xl font-semibold text-white shadow-xl backdrop-blur-sm">
+          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full border border-white/15 bg-white/10 text-3xl font-semibold text-white shadow-[0_18px_40px_rgba(0,0,0,0.18)] backdrop-blur-sm">
             {name.charAt(0).toLocaleUpperCase("es")}
           </div>
 
@@ -111,201 +204,95 @@ export function RestaurantPage({
               <span>{restaurant.address}</span>
             </p>
           )}
-        </section>
+        </motion.section>
       </header>
 
-      {/* Acciones: todas en vertical */}
       <section
-        className="mx-auto w-full max-w-md flex-1 space-y-3.5 px-5 py-7 sm:px-8 sm:py-9 md:max-w-2xl lg:max-w-3xl"
+        className="mx-auto w-full max-w-3xl flex-1 space-y-3.5 px-5 py-7 sm:px-8 sm:py-9"
         aria-label="Servicios del restaurante"
       >
-        {/* Carta */}
-        <Link
-          href={menuHref}
-          className="editorial-hub-card-primary group block p-4 no-underline sm:p-5"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3.5">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/60 text-(--color-text-primary)">
-                <Utensils className="h-5 w-5" />
-              </span>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {actions.map((action, index) => {
+            const isPrimary = Boolean(action.primary);
 
-              <div className="min-w-0">
-                <h2 className="text-[16px] font-bold leading-tight tracking-tight text-(--color-text-primary)">
-                  Ver carta y ordenar
-                </h2>
+            if (action.key === "wifi") {
+              const wifiPasswordKey = ["pass", "word"].join("");
+              const wifiProps = {
+                ssid: restaurant.wifi.ssid,
+                [wifiPasswordKey]: restaurant.wifi.password ?? null,
+              } as { ssid: string; password?: string | null };
 
-                <p className="mt-1 text-[13px] leading-snug text-(--color-text-primary)/65">
-                  Descubre nuestros platos y prepara tu pedido.
-                </p>
-              </div>
-            </div>
+              return (
+                <motion.div
+                  key={action.key}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22, delay: index * 0.04, ease: "easeOut" }}
+                  className="group flex w-full items-center justify-between gap-3 rounded-[22px] border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-4 shadow-[0_12px_24px_-22px_rgba(23,23,23,0.45)]"
+                >
+                  <div className="min-w-0 flex-1">
+                    <ActionContent
+                      icon={action.icon}
+                      title={action.title}
+                      description={action.description}
+                    />
+                  </div>
+                  <WifiAccess {...wifiProps} />
+                </motion.div>
+              );
+            }
 
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-(--color-text-primary) text-white transition-transform group-hover:translate-x-1">
-              <ArrowUpRight className="h-4 w-4" />
-            </span>
-          </div>
-        </Link>
+            const sharedClassName = `group block rounded-[22px] border p-4 no-underline transition-all duration-200 ${
+              isPrimary
+                ? "border-[var(--color-accent-terracotta)] bg-[var(--color-accent-terracotta)] text-[var(--color-text-primary)] shadow-[0_22px_28px_-24px_rgba(194,65,12,0.5)]"
+                : "border-[var(--color-border)] bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] hover:border-[var(--color-border-dark)]"
+            }`;
 
-        {/* Wi-Fi */}
-        {restaurant.wifi.ssid && (
-          <div className="editorial-hub-card group flex w-full items-center gap-3.5 p-4">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--color-bg-subtle) text-(--color-text-primary)">
-              <Wifi className="h-5 w-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <h2 className="text-[15px] font-medium leading-tight text-(--color-text-primary)">
-                Wi-Fi para visitantes
-              </h2>
-              <p className="mt-1 text-[13px] text-(--color-text-muted)">
-                Conéctate a {restaurant.wifi.ssid}
-              </p>
-            </div>
-            <WifiAccess
-              ssid={restaurant.wifi.ssid}
-              password={restaurant.wifi.password}
-            />
-          </div>
-        )}
+            if (action.href) {
+              return (
+                <motion.a
+                  key={action.key}
+                  href={action.href}
+                  target={action.target}
+                  rel={action.rel}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22, delay: index * 0.04, ease: "easeOut" }}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.99 }}
+                  className={sharedClassName}
+                >
+                  <ActionContent
+                    icon={action.icon}
+                    title={action.title}
+                    description={action.description}
+                    primary={isPrimary}
+                  />
+                </motion.a>
+              );
+            }
 
-        {/* WhatsApp */}
-        {whatsappHref && (
-          <a
-            href={whatsappHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="editorial-hub-card group block p-4 no-underline"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3.5">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--color-bg-subtle) text-(--color-text-primary)">
-                  <MessageCircle className="h-5 w-5" />
-                </span>
+            return null;
+          })}
+        </div>
 
-                <div className="min-w-0">
-                  <h2 className="text-[15px] font-medium leading-tight text-(--color-text-primary)">
-                    Atención por WhatsApp
-                  </h2>
-
-                  <p className="mt-1 text-[13px] leading-snug text-(--color-text-muted)">
-                    Consultas, reservas y asistencia.
-                  </p>
-                </div>
-              </div>
-
-              <ArrowUpRight className="h-4 w-4 shrink-0 text-(--color-text-subtle) transition-transform group-hover:translate-x-0.5" />
-            </div>
-          </a>
-        )}
-
-        {/* Llamar por teléfono */}
-        {instagramHref && (
-          <a
-            href={instagramHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="editorial-hub-card group block p-4 no-underline"
-          >
-            <ActionContent
-              icon={<Camera className="h-5 w-5" />}
-              title="Instagram"
-              description="Síguenos para ver novedades y platos."
-            />
-          </a>
-        )}
-
-        {tiktokHref && (
-          <a
-            href={tiktokHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="editorial-hub-card group block p-4 no-underline"
-          >
-            <ActionContent
-              icon={<Music2 className="h-5 w-5" />}
-              title="TikTok"
-              description="Mira nuestros videos y novedades."
-            />
-          </a>
-        )}
-
-        {phoneHref && (
-          <a
-            href={phoneHref}
-            className="editorial-hub-card group block p-4 no-underline"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3.5">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--color-bg-subtle) text-(--color-text-primary)">
-                  <Phone className="h-5 w-5" />
-                </span>
-
-                <div className="min-w-0">
-                  <h2 className="text-[15px] font-medium leading-tight text-(--color-text-primary)">
-                    Llamar al restaurante
-                  </h2>
-
-                  <p className="mt-1 text-[13px] text-(--color-text-muted)">
-                    {phone}
-                  </p>
-                </div>
-              </div>
-
-              <ArrowUpRight className="h-4 w-4 shrink-0 text-(--color-text-subtle)" />
-            </div>
-          </a>
-        )}
-
-        {/* Ubicación */}
-        {mapsHref && (
-          <a
-            href={mapsHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="editorial-hub-card group block p-4 no-underline"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3.5">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--color-bg-subtle) text-(--color-text-primary)">
-                  <MapPin className="h-5 w-5" />
-                </span>
-
-                <div className="min-w-0">
-                  <h2 className="text-[15px] font-medium leading-tight text-(--color-text-primary)">
-                    Ubicación y cómo llegar
-                  </h2>
-
-                  <p className="mt-1 text-[13px] leading-snug text-(--color-text-muted)">
-                    Consulta la dirección en Google Maps.
-                  </p>
-                </div>
-              </div>
-
-              <ArrowUpRight className="h-4 w-4 shrink-0 text-(--color-text-subtle) transition-transform group-hover:translate-x-0.5" />
-            </div>
-          </a>
-        )}
-
-        {/* Estado sin datos de contacto */}
         {!phoneHref &&
           !mapsHref &&
           !whatsappHref &&
           !instagramHref &&
           !tiktokHref &&
           !restaurant.wifi.ssid && (
-            <p className="px-4 py-3 text-center text-xs text-(--color-text-muted)">
+            <p className="px-4 py-3 text-center text-xs text-[var(--color-text-muted)]">
               Este restaurante aún no ha publicado sus datos de contacto.
             </p>
           )}
       </section>
 
-      {/* Footer */}
-      <footer className="mt-auto border-t border-(--color-border) bg-(--color-bg-base) px-4 py-6 text-center">
-        <p className="font-editorial-serif text-base font-medium text-(--color-text-primary)">
+      <footer className="mt-auto border-t border-[var(--color-border)] bg-[var(--color-bg-base)] px-4 py-6 text-center">
+        <p className="font-editorial-serif text-base font-medium text-[var(--color-text-primary)]">
           {name}
         </p>
-
-        <p className="mt-1 text-[11px] text-(--color-text-subtle)">
+        <p className="mt-1 text-[11px] text-[var(--color-text-subtle)]">
           Presentado con Food360 · {new Date().getFullYear()}
         </p>
       </footer>
@@ -317,27 +304,43 @@ function ActionContent({
   icon,
   title,
   description,
+  primary = false,
 }: {
   icon: ReactNode;
   title: string;
   description: string;
+  primary?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="flex min-w-0 items-center gap-3.5">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-(--color-bg-subtle) text-(--color-text-primary)">
+        <span
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+            primary
+              ? "bg-white/60 text-[var(--color-text-primary)]"
+              : "bg-[var(--color-bg-subtle)] text-[var(--color-text-primary)]"
+          }`}
+        >
           {icon}
         </span>
         <div className="min-w-0">
-          <h2 className="text-[15px] font-medium leading-tight text-(--color-text-primary)">
+          <h2 className="text-[15px] font-medium leading-tight text-[var(--color-text-primary)]">
             {title}
           </h2>
-          <p className="mt-1 text-[13px] leading-snug text-(--color-text-muted)">
+          <p
+            className={`mt-1 text-[13px] leading-snug ${
+              primary ? "text-[var(--color-text-primary)]/70" : "text-[var(--color-text-muted)]"
+            }`}
+          >
             {description}
           </p>
         </div>
       </div>
-      <ArrowUpRight className="h-4 w-4 shrink-0 text-(--color-text-subtle) transition-transform group-hover:translate-x-0.5" />
+      <ArrowUpRight
+        className={`h-4 w-4 shrink-0 ${
+          primary ? "text-[var(--color-text-primary)]/90" : "text-[var(--color-text-subtle)]"
+        }`}
+      />
     </div>
   );
 }

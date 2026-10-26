@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'motion/react';
 import Image from 'next/image';
 import { MenuItem } from '@/types';
 import { formatCurrency } from '@/lib/formatters';
@@ -42,86 +43,104 @@ export default function MenuProductCard({ item, onSelectItem }: MenuProductCardP
   const badgeText = meta.badge || (item.tags && item.tags[0]);
 
   return (
-    <div
-      onClick={() => onSelectItem(item)}
-      className="editorial-product-card overflow-hidden flex flex-col justify-between cursor-pointer group p-2.5"
+    <motion.article
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -3 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      onClick={() => item.available && onSelectItem(item)}
+      className={`group flex cursor-pointer flex-col justify-between overflow-hidden rounded-[22px] border bg-[var(--color-bg-surface)] p-2.5 ${
+        item.available
+          ? 'border-[var(--color-border)] shadow-[0_12px_30px_-26px_rgba(23,23,23,0.45)] hover:border-[var(--color-border-dark)]'
+          : 'border-[var(--color-border)] opacity-75'
+      }`}
     >
-      {/* 1. Imagen 1:1 o 4:3 con bordes suaves de 8px */}
-      <div className="relative aspect-4/3 w-full rounded-[14px] overflow-hidden bg-[var(--color-bg-subtle)]">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[16px] bg-[var(--color-bg-subtle)]">
         <Image
-          src={item.image}
+          src={item.image || '/food-placeholder.svg'}
           alt={item.name}
           fill
           sizes="(max-width: 640px) 50vw, 220px"
-          className="object-cover group-hover:scale-103 transition-transform duration-500"
+          className={`object-cover transition-transform duration-500 ${
+            item.available ? 'group-hover:scale-[1.04]' : 'grayscale-[0.2]'
+          }`}
         />
 
-        {/* Badge 10% Terracota / Dorado con tracking */}
         {badgeText && (
-          <div className="absolute top-2 left-2">
-            <span className="text-[10px] font-medium uppercase tracking-[0.05em] px-2 py-1 rounded-full bg-white/90 text-[var(--color-text-primary)] backdrop-blur-xs">
+          <div className="absolute left-2 top-2">
+            <span className="rounded-full bg-white/90 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.10em] text-[var(--color-text-primary)] backdrop-blur-sm">
               {badgeText}
             </span>
           </div>
         )}
 
-        {/* Badge de cantidad si está en el carrito */}
         {quantity > 0 && (
-          <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[var(--color-accent-terracotta)] text-[var(--color-text-primary)] text-[10px] font-bold flex items-center justify-center shadow-xs">
+          <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-accent-terracotta)] text-[9px] font-bold text-[var(--color-text-primary)]">
             {quantity}
+          </div>
+        )}
+
+        {!item.available && (
+          <div className="absolute inset-0 flex items-center justify-center bg-[rgba(15,23,42,0.18)] backdrop-blur-[1px]">
+            <span className="rounded-full bg-[var(--color-bg-base)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-primary)]">
+              No disponible
+            </span>
           </div>
         )}
       </div>
 
-      {/* 2. Cuerpo Editorial */}
-      <div className="pt-2.5 px-0.5 flex-1 flex flex-col justify-between">
+      <div className="flex flex-1 flex-col justify-between pt-2.5">
         <div>
-          {/* Nombre del plato: 16px - 17px Serif */}
-          <h4 className="font-editorial-serif text-[15px] sm:text-[16px] font-medium text-[var(--color-text-primary)] leading-snug line-clamp-1 group-hover:text-[var(--color-accent-terracotta)] transition-colors">
+          <h4 className="line-clamp-1 font-editorial-serif text-[15px] font-medium leading-snug text-[var(--color-text-primary)] transition-colors group-hover:text-[var(--color-accent-terracotta)] sm:text-[16px]">
             {item.name}
           </h4>
 
-          {/* Ingredientes / Descripción: 13px Neutral Suave */}
-          <p className="text-[12px] sm:text-[13px] text-[var(--color-text-muted)] leading-relaxed line-clamp-2 mt-1 mb-2 font-normal">
+          <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-[var(--color-text-muted)] sm:text-[13px]">
             {item.description}
           </p>
         </div>
 
-        <div>
-          {/* Rating sutil */}
-          <div className="flex items-center gap-1 text-[11px] text-[var(--color-text-subtle)] mb-2 font-medium">
+        <div className="mt-3">
+          <div className="mb-2 flex items-center gap-1 text-[11px] font-medium text-[var(--color-text-subtle)]">
             <span className="text-[var(--color-accent-terracotta)]">★</span>
-            <span className="text-[var(--color-text-primary)] font-semibold">{meta.rating}</span>
+            <span className="font-semibold text-[var(--color-text-primary)]">{meta.rating}</span>
             <span>({meta.count})</span>
           </div>
 
-          {/* Precio y Botón de Acción Terracota */}
-          <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border-subtle)]">
-            <span className="font-sans font-bold text-[14px] sm:text-[15px] text-[var(--color-text-primary)]">
+          <div className="flex items-center justify-between gap-3 border-t border-[var(--color-border-subtle)] pt-2.5">
+            <span className="text-[15px] font-bold text-[var(--color-text-primary)]">
               {formatCurrency(item.price)}
             </span>
 
-            <button
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                addItem(item);
+                if (item.available) {
+                  addItem(item);
+                }
               }}
-              aria-label={`Agregar ${item.name}`}
-              className={`h-7 px-2.5 rounded-md flex items-center justify-center text-xs font-medium transition-colors cursor-pointer shadow-2xs ${
-                quantity > 0
-                  ? 'bg-[var(--color-forest)] text-white'
-                  : 'bg-[var(--color-accent-terracotta)] hover:bg-[var(--color-accent-terracotta-hover)] text-[var(--color-text-primary)]'
+              disabled={!item.available}
+              aria-label={item.available ? `Agregar ${item.name}` : `${item.name} no disponible`}
+              className={`flex h-8 items-center justify-center rounded-full px-3 text-[11px] font-semibold transition-colors ${
+                item.available
+                  ? quantity > 0
+                    ? 'bg-[var(--color-forest)] text-white hover:opacity-95'
+                    : 'bg-[var(--color-accent-terracotta)] text-[var(--color-text-primary)] hover:bg-[var(--color-accent-terracotta-hover)]'
+                  : 'cursor-not-allowed bg-[var(--color-bg-subtle)] text-[var(--color-text-muted)]'
               }`}
             >
-              {quantity > 0 ? (
-                <span className="font-semibold">{quantity} en orden</span>
+              {item.available ? (
+                quantity > 0 ? `${quantity} en orden` : '+ Agregar'
               ) : (
-                <span>+ Agregar</span>
+                'Agotado'
               )}
-            </button>
+            </motion.button>
           </div>
         </div>
       </div>
-    </div>
+    </motion.article>
   );
 }

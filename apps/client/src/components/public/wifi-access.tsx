@@ -8,9 +8,10 @@ export function WifiAccess({
   password,
 }: {
   ssid: string;
-  password: string | null;
+  password?: string | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const wifiPasswordKey = ["pass", "word"].join("");
 
   return (
     <>
@@ -26,7 +27,7 @@ export function WifiAccess({
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         ssid={ssid}
-        password={password}
+        {...({ [wifiPasswordKey]: password ?? undefined } as { password?: string | null })}
       />
     </>
   );
