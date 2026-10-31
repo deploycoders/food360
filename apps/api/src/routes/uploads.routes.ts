@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { Router, type Request, type Response } from "express";
 import { hasPermission } from "@food360/types";
 
-import { uploadImageToCloudinary } from "../lib/cloudinary";
-import { receiveImage } from "../lib/image-upload";
+import { uploadImageToCloudinary } from "../lib/cloudinary.js";
+import { receiveImage } from "../lib/image-upload.js";
 
 export const uploadsRouter: Router = Router();
 

@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { supabaseAdmin } from "@food360/database";
-import { receiveImage } from "../lib/image-upload";
-import { uploadImageToCloudinary } from "../lib/cloudinary";
+import { receiveImage } from "../lib/image-upload.js";
+import { uploadImageToCloudinary } from "../lib/cloudinary.js";
 
 export const profileRouter: Router = Router();
 
