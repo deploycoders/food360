@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 
 import { supabaseAdmin } from "@food360/database";
-import { requireRole } from "../../middleware";
+import { requireRole } from "../../auth.middleware.ts";
 
 export const reservationsRouter: Router = Router();
 
@@ -181,7 +181,10 @@ reservationsRouter.post(
 
       return res.status(500).json({
         success: false,
-        error: getErrorMessage(error, "No se pudo marcar la llegada de la reserva"),
+        error: getErrorMessage(
+          error,
+          "No se pudo marcar la llegada de la reserva",
+        ),
       });
     }
   },
@@ -483,7 +486,10 @@ reservationsRouter.post(
 
       return res.status(500).json({
         success: false,
-        error: getErrorMessage(error, "No se pudo marcar la reserva como no-show"),
+        error: getErrorMessage(
+          error,
+          "No se pudo marcar la reserva como no-show",
+        ),
       });
     }
   },

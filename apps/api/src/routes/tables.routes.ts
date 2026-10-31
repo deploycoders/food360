@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { supabaseAdmin } from "@food360/database";
-import { requireRole } from "../../middleware.ts";
+import { requireRole } from "../../auth.middleware.ts.ts";
 import { randomBytes } from "crypto";
 
 export const tablesRouter: Router = Router();

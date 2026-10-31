@@ -17,7 +17,7 @@ import { onboardingRouter } from "./routes/onboarding.routes";
 import { uploadsRouter } from "./routes/uploads.routes";
 import { publicRestaurantsRouter } from "./routes/public-restaurants.routes";
 import { swaggerSpec } from "./swagger";
-import { verifyAuth } from "../middleware";
+import { verifyAuth } from "../auth.middleware.ts";
 
 const { json, urlencoded } = bodyParser;
 
