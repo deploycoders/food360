@@ -1,11 +1,13 @@
+import type { OrderOrigin, OrderOriginState } from "@/types";
+
 export function formatCurrency(amount: number): string {
   return `$${amount.toFixed(2)}`;
 }
 
 export function formatPhone(phone: string): string {
   // Format Venezuelan phone: +58 414-123-4567
-  const cleaned = phone.replace(/\D/g, '');
-  if (cleaned.length === 13 && cleaned.startsWith('58')) {
+  const cleaned = phone.replace(/\D/g, "");
+  if (cleaned.length === 13 && cleaned.startsWith("58")) {
     return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 5)}-${cleaned.slice(5, 8)}-${cleaned.slice(8)}`;
   }
   return phone;
@@ -17,20 +19,79 @@ export function generateOrderId(): string {
   return `ORD-${timestamp}-${random}`;
 }
 
-export function parseOriginId(id: string | null): { originId: string; originType: 'mesa' | 'delivery' | 'unknown' } {
+export function formatOriginLabel(
+  origin: OrderOrigin,
+  tableNumber: number | null,
+): string | null {
+  if (origin === "DINE_IN") {
+    return tableNumber != null ? `Mesa ${tableNumber}` : "En mesa";
+  }
+  if (origin === "TAKEAWAY") return "Para llevar";
+  if (origin === "DELIVERY") return "Delivery";
+  return null;
+}
+
+/**
+ * Legacy hub demo helper: maps ?id= query values for the static landing only.
+ * Real restaurants use ?table=t_… via SessionContext.setTableOrigin.
+ */
+export function parseDemoOriginId(id: string | null): OrderOriginState {
   if (!id) {
-    return { originId: 'walk-in', originType: 'unknown' };
+    return { origin: "UNKNOWN", tablePublicCode: null, tableNumber: null };
   }
 
   const lowered = id.toLowerCase();
 
-  if (lowered.startsWith('mesa') || lowered.startsWith('table')) {
-    return { originId: id, originType: 'mesa' };
+  if (lowered.startsWith("mesa") || lowered.startsWith("table")) {
+    const numberMatch = id.match(/(\d+)/);
+    return {
+      origin: "DINE_IN",
+      tablePublicCode: null,
+      tableNumber: numberMatch ? Number(numberMatch[1]) : null,
+    };
   }
 
-  if (lowered === 'delivery' || lowered === 'envio') {
-    return { originId: id, originType: 'delivery' };
+  if (lowered === "delivery" || lowered === "envio") {
+    return {
+      origin: "DELIVERY",
+      tablePublicCode: null,
+      tableNumber: null,
+    };
   }
 
-  return { originId: id, originType: 'unknown' };
+  if (lowered === "takeaway" || lowered === "para-llevar") {
+    return {
+      origin: "TAKEAWAY",
+      tablePublicCode: null,
+      tableNumber: null,
+    };
+  }
+
+  return {
+    origin: "UNKNOWN",
+    tablePublicCode: null,
+    tableNumber: null,
+  };
+}
+
+/** @deprecated Use parseDemoOriginId or SessionContext.setTableOrigin */
+export function parseOriginId(id: string | null): {
+  originId: string;
+  originType: "mesa" | "delivery" | "unknown";
+} {
+  if (!id) {
+    return { originId: "walk-in", originType: "unknown" };
+  }
+
+  const lowered = id.toLowerCase();
+
+  if (lowered.startsWith("mesa") || lowered.startsWith("table")) {
+    return { originId: id, originType: "mesa" };
+  }
+
+  if (lowered === "delivery" || lowered === "envio") {
+    return { originId: id, originType: "delivery" };
+  }
+
+  return { originId: id, originType: "unknown" };
 }

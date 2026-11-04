@@ -19,7 +19,10 @@ async function fetchPublicRestaurant(
 ): Promise<PublicRestaurantResult> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
 
-  if (!baseUrl) return { status: "error" };
+  if (!baseUrl) {
+    console.error("[PublicRestaurant] NEXT_PUBLIC_API_URL no está configurada");
+    return { status: "error" };
+  }
 
   const endpoint = baseUrl.endsWith("/api/v1")
     ? `${baseUrl}/public/restaurants/${path}`
@@ -27,16 +30,55 @@ async function fetchPublicRestaurant(
 
   try {
     const response = await fetch(endpoint, { cache: "no-store" });
-    if (response.status === 404) return { status: "not-found" };
-    if (!response.ok) return { status: "error" };
+    const responseText = await response.text();
 
-    const result: unknown = await response.json();
+    if (response.status === 404) {
+      return { status: "not-found" };
+    }
+
+    if (!response.ok) {
+      console.error("[PublicRestaurant] Error de API:", {
+        endpoint,
+        status: response.status,
+        body: responseText.slice(0, 1000),
+      });
+
+      return { status: "error" };
+    }
+
+    let result: unknown;
+
+    try {
+      result = JSON.parse(responseText);
+    } catch {
+      console.error("[PublicRestaurant] La API no devolvió JSON válido:", {
+        endpoint,
+        body: responseText.slice(0, 1000),
+      });
+
+      return { status: "error" };
+    }
+
     if (!isPublicRestaurantResponse(result)) {
+      const data =
+        result && typeof result === "object" && "data" in result
+          ? (result as { data?: unknown }).data
+          : undefined;
+
+      console.error("[PublicRestaurant] Respuesta con estructura inválida:", {
+        endpoint,
+        responseKeys:
+          result && typeof result === "object" ? Object.keys(result) : [],
+        dataKeys: data && typeof data === "object" ? Object.keys(data) : [],
+      });
+
       return { status: "error" };
     }
 
     return { status: "found", restaurant: result.data };
-  } catch {
+  } catch (error) {
+    console.error("[PublicRestaurant] Error de conexión:", error);
+
     return { status: "error" };
   }
 }
@@ -55,8 +97,14 @@ function isPublicRestaurantResponse(
     (typeof data.phone === "string" || data.phone === null) &&
     (typeof data.address === "string" || data.address === null) &&
     (typeof data.currency === "string" || data.currency === null) &&
-    [data.instagramUrl, data.tiktokUrl, data.whatsappUrl, data.googleBusinessUrl].every(
-      (value) => value === undefined || typeof value === "string" || value === null,
+    [
+      data.instagramUrl,
+      data.tiktokUrl,
+      data.whatsappUrl,
+      data.googleBusinessUrl,
+    ].every(
+      (value) =>
+        value === undefined || typeof value === "string" || value === null,
     ) &&
     !!data.wifi &&
     (typeof data.wifi.ssid === "string" || data.wifi.ssid === null) &&

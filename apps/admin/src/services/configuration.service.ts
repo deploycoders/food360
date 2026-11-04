@@ -8,7 +8,11 @@ interface ApiResponse<T> {
 }
 
 function unwrapResponse<T>(response: ApiResponse<T>): T {
-  if (!response.success || response.data === undefined || response.data === null) {
+  if (
+    !response.success ||
+    response.data === undefined ||
+    response.data === null
+  ) {
     throw new Error(
       response.error || "No se pudo completar la operación de configuración.",
     );
@@ -27,6 +31,7 @@ interface ApiRestaurantConfiguration {
   currency: string | null;
   timezone: string | null;
   tax_rate: number | string | null;
+  logo_url: string | null;
 }
 
 interface ApiRestaurantSchedule {
@@ -63,6 +68,7 @@ function mapProfile(data: ApiRestaurantConfiguration): BusinessProfile {
     currency: data.currency ?? "",
     timezone: data.timezone ?? "",
     taxRate: Number(data.tax_rate ?? 0),
+    logoUrl: data.logo_url ?? undefined,
   };
 }
 
@@ -130,7 +136,9 @@ export const configurationService = {
 
   async updateSchedules(schedules: DaySchedule[]): Promise<DaySchedule[]> {
     if (schedules.length !== DAYS.length) {
-      throw new Error("Debes configurar exactamente los siete días de la semana.");
+      throw new Error(
+        "Debes configurar exactamente los siete días de la semana.",
+      );
     }
     const schedulesByDay = new Map(
       schedules.map((schedule) => [schedule.day, schedule]),
@@ -139,7 +147,9 @@ export const configurationService = {
       schedulesByDay.size !== DAYS.length ||
       DAYS.some(({ day }) => !schedulesByDay.has(day))
     ) {
-      throw new Error("La configuración debe contener una sola entrada para cada día.");
+      throw new Error(
+        "La configuración debe contener una sola entrada para cada día.",
+      );
     }
 
     const days: ApiRestaurantSchedule[] = DAYS.map((day) => {
@@ -166,5 +176,31 @@ export const configurationService = {
     );
 
     return mapSchedules(unwrapResponse(response) ?? []);
+  },
+
+  async uploadRestaurantLogo(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await apiFetch<ApiResponse<{ logo_url: string }>>(
+      "/configuration/logo",
+      {
+        method: "POST",
+        body: formData,
+      },
+    );
+
+    return unwrapResponse(response).logo_url;
+  },
+
+  async deleteRestaurantLogo(): Promise<void> {
+    const response = await apiFetch<ApiResponse<{ logo_url: null }>>(
+      "/configuration/logo",
+      {
+        method: "DELETE",
+      },
+    );
+
+    unwrapResponse(response);
   },
 };

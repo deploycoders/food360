@@ -40,6 +40,16 @@ export interface CustomerData {
   telefono: string;
 }
 
+/** Canonical order origin for the public client. Never map UNKNOWN to WALK_IN. */
+export type OrderOrigin = "DINE_IN" | "TAKEAWAY" | "DELIVERY" | "UNKNOWN";
+
+export interface OrderOriginState {
+  origin: OrderOrigin;
+  /** Public table code (`t_…`), never the internal UUID. */
+  tablePublicCode: string | null;
+  tableNumber: number | null;
+}
+
 export interface OrderPayload {
   id: string;
   items: {
@@ -50,8 +60,9 @@ export interface OrderPayload {
     subtotal: number;
   }[];
   customer: CustomerData;
-  originId: string;
-  originType: "mesa" | "delivery" | "unknown";
+  origin: OrderOrigin;
+  tablePublicCode: string | null;
+  tableNumber: number | null;
   total: number;
   itemCount: number;
   createdAt: string;

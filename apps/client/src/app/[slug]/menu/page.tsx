@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { Suspense } from "react";
 
 import MenuPage from "@/app/menu/page";
+import { TenantBinder } from "@/context/TenantContext";
+import { TableOriginBinder } from "@/components/public/table-origin-binder";
 import { getRestaurantUrl } from "@/lib/restaurant-url";
 import {
   getPublicRestaurant,
@@ -11,7 +14,15 @@ import {
 
 type PageProps = {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+function firstSearchParam(
+  value: string | string[] | undefined,
+): string | undefined {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
 
 export async function generateMetadata({
   params,
@@ -34,8 +45,13 @@ export async function generateMetadata({
   };
 }
 
-export default async function RestaurantMenuPage({ params }: PageProps) {
+export default async function RestaurantMenuPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { slug } = await params;
+  const query = await searchParams;
+  const tableCode = firstSearchParam(query.table)?.trim();
 
   if (!isPublicRestaurantSlug(slug)) {
     notFound();
@@ -51,7 +67,7 @@ export default async function RestaurantMenuPage({ params }: PageProps) {
     throw new Error("No se pudo cargar el restaurante");
   }
 
-  // Si el slug cambió, redirigimos a la URL canónica.
+  // Si el slug cambió, redirigimos a la URL canónica conservando ?table=.
   if (result.restaurant.slug !== slug) {
     const requestHeaders = await headers();
 
@@ -65,9 +81,21 @@ export default async function RestaurantMenuPage({ params }: PageProps) {
         "/menu",
         isSubdomain,
         requestHeaders,
+        { table: tableCode },
       ),
     );
   }
 
-  return <MenuPage initialSlug={result.restaurant.slug} />;
+  return (
+    <>
+      <TenantBinder restaurant={result.restaurant} />
+      <Suspense fallback={null}>
+        <TableOriginBinder />
+      </Suspense>
+      <MenuPage
+        initialSlug={result.restaurant.slug}
+        restaurant={result.restaurant}
+      />
+    </>
+  );
 }

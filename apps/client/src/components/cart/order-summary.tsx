@@ -1,12 +1,13 @@
 'use client';
 
-import { formatCurrency } from '@/lib/formatters';
+import { formatCurrency, formatOriginLabel } from '@/lib/formatters';
+import type { OrderOrigin } from '@/types';
 
 interface OrderSummaryProps {
   totalPrice: number;
   totalItems: number;
-  originId: string;
-  originType: 'mesa' | 'delivery' | 'unknown';
+  origin: OrderOrigin;
+  tableNumber: number | null;
   onSubmit: () => void;
   isSubmitting: boolean;
 }
@@ -14,16 +15,12 @@ interface OrderSummaryProps {
 export default function OrderSummary({ 
   totalPrice, 
   totalItems, 
-  originId, 
-  originType, 
+  origin,
+  tableNumber,
   onSubmit, 
   isSubmitting 
 }: OrderSummaryProps) {
-  const originLabel = originType === 'mesa' 
-    ? `📍 ${originId.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}` 
-    : originType === 'delivery' 
-    ? '🛵 Delivery Directo' 
-    : `📍 Origen: ${originId}`;
+  const originLabel = formatOriginLabel(origin, tableNumber) ?? 'Origen pendiente';
 
   return (
     <div className="glass-card rounded-3xl p-6 shadow-xl animate-fade-in-up">
@@ -38,42 +35,26 @@ export default function OrderSummary({
       {/* Totals */}
       <div className="space-y-3 mb-6">
         <div className="flex justify-between text-sm">
-          <span className="text-[var(--color-text-muted)]">Productos</span>
-          <span className="text-[var(--color-text-main)] font-medium">{totalItems} unidades</span>
+          <span className="text-[var(--color-text-muted)]">Items ({totalItems})</span>
+          <span className="font-medium text-[var(--color-text-main)]">{formatCurrency(totalPrice)}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-[var(--color-text-muted)]">Subtotal</span>
-          <span className="text-[var(--color-text-main)] font-medium">{formatCurrency(totalPrice)}</span>
+          <span className="font-medium text-[var(--color-text-main)]">{formatCurrency(totalPrice)}</span>
         </div>
-        <div className="h-px bg-[var(--color-border)] my-2" />
-        <div className="flex justify-between items-center">
-          <span className="text-[var(--color-text-main)] font-bold text-base">Total a Pagar</span>
-          <span className="text-[var(--color-primary)] font-extrabold text-2xl">{formatCurrency(totalPrice)}</span>
+        <div className="border-t border-[var(--color-border)] pt-3 flex justify-between">
+          <span className="font-bold text-[var(--color-text-main)]">Total</span>
+          <span className="font-bold text-lg text-[var(--color-text-main)]">{formatCurrency(totalPrice)}</span>
         </div>
       </div>
 
-      {/* Submit button */}
       <button
         onClick={onSubmit}
-        disabled={isSubmitting}
-        className="w-full py-4 rounded-xl btn-primary font-bold text-base cursor-pointer
-          disabled:opacity-50 disabled:cursor-not-allowed
-          flex items-center justify-center gap-2"
+        disabled={isSubmitting || totalItems === 0}
+        className="w-full py-3.5 rounded-2xl bg-[var(--color-accent)] text-white font-bold text-sm
+          hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
       >
-        {isSubmitting ? (
-          <>
-            <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            <span>Enviando al KDS...</span>
-          </>
-        ) : (
-          <>
-            <span>Enviar Pedido a Cocina</span>
-            <span>🍽️</span>
-          </>
-        )}
+        {isSubmitting ? 'Enviando...' : 'Enviar Pedido'}
       </button>
     </div>
   );

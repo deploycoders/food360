@@ -9,5 +9,12 @@
     },
     "strictNullChecks": true
   },
-  "include": ["src", "next.config.ts", "next-env.d.ts", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"]
+  "include": [
+    "src",
+    "next.config.ts",
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "proxy.ts"
+  ]
 }

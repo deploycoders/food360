@@ -1,125 +1,120 @@
-'use client';
+"use client";
 
-import { motion } from 'motion/react';
-import { useRef, useEffect, type ReactNode } from 'react';
-import { MenuCategory } from '@/types';
+import { useEffect, useRef } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import { X } from "lucide-react";
 
-export interface CategoryPillItem {
-  id: MenuCategory;
-  label: string;
-  iconSvg: ReactNode;
-}
+import type { CategoryInfo, MenuCategory } from "@/types";
 
 interface CategoryBubblesProps {
-  activeCategory: MenuCategory;
-  onSelect: (category: MenuCategory) => void;
+  categories: CategoryInfo[];
+  activeCategory: MenuCategory | null;
+  onSelect: (category: MenuCategory | null) => void;
 }
 
-const categoryPills: CategoryPillItem[] = [
-  {
-    id: 'summer-bites',
-    label: 'Sushi & Rolls',
-    iconSvg: (
-      <svg className="h-3.5 w-3.5 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <rect width="18" height="12" x="3" y="6" rx="2" />
-        <circle cx="12" cy="12" r="2.5" />
-      </svg>
-    ),
-  },
-  {
-    id: 'happy-hour',
-    label: 'Sashimi',
-    iconSvg: (
-      <svg className="h-3.5 w-3.5 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 14c3-6 11-8 16-4-1 6-7 10-16 4z" />
-      </svg>
-    ),
-  },
-  {
-    id: 'hot-appetizers',
-    label: 'Entradas',
-    iconSvg: (
-      <svg className="h-3.5 w-3.5 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
-        <circle cx="12" cy="12" r="4" />
-      </svg>
-    ),
-  },
-  {
-    id: 'main-dishes',
-    label: 'Platos Fuertes',
-    iconSvg: (
-      <svg className="h-3.5 w-3.5 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 12a9 9 0 0 1-18 0h18z" />
-        <path d="M7 21h10" />
-      </svg>
-    ),
-  },
-  {
-    id: 'drinks',
-    label: 'Bebidas',
-    iconSvg: (
-      <svg className="h-3.5 w-3.5 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 3h12l-2 18H8L6 3z" />
-        <circle cx="12" cy="11" r="2" />
-      </svg>
-    ),
-  },
-  {
-    id: 'desserts',
-    label: 'Postres',
-    iconSvg: (
-      <svg className="h-3.5 w-3.5 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 4c-3 0-5 2-5 4 0 2 1 3 2 4v6h6v-6c1-1 2-2 2-4 0-2-2-4-5-4z" />
-      </svg>
-    ),
-  },
-];
-
-export default function CategoryBubbles({ activeCategory, onSelect }: CategoryBubblesProps) {
+export default function CategoryBubbles({
+  categories,
+  activeCategory,
+  onSelect,
+}: CategoryBubblesProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const activeBtnRef = useRef<HTMLButtonElement>(null);
+  const activeButtonRef = useRef<HTMLButtonElement>(null);
+
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
-    if (activeBtnRef.current && scrollRef.current) {
-      const container = scrollRef.current;
-      const btn = activeBtnRef.current;
-      const scrollLeft = btn.offsetLeft - container.offsetWidth / 2 + btn.offsetWidth / 2;
-      container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
-    }
-  }, [activeCategory]);
+    const container = scrollRef.current;
+    const activeButton = activeButtonRef.current;
+
+    if (!container || !activeButton) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const buttonRect = activeButton.getBoundingClientRect();
+
+    const desiredPosition =
+      container.scrollLeft +
+      buttonRect.left -
+      containerRect.left -
+      (container.clientWidth - buttonRect.width) / 2;
+
+    const maxScroll = container.scrollWidth - container.clientWidth;
+
+    container.scrollTo({
+      left: Math.max(0, Math.min(desiredPosition, maxScroll)),
+      behavior: shouldReduceMotion ? "auto" : "smooth",
+    });
+  }, [activeCategory, shouldReduceMotion]);
+
+  if (categories.length <= 1) return null;
 
   return (
-    <div className="sticky top-[74px] z-30 bg-[var(--color-bg-base)]/95 py-3 backdrop-blur-md">
+    <nav
+      data-animate="menu-categories"
+      aria-label="Categorías de la carta"
+      className="sticky top-42.75 z-30 border-b border-(--color-border) bg-(--color-bg-base)/95 py-2.5 backdrop-blur-xl"
+    >
       <div
         ref={scrollRef}
-        className="no-scrollbar flex snap-x snap-mandatory items-center gap-2 overflow-x-auto px-4"
+        className="mx-auto flex w-full max-w-7xl snap-x snap-proximity items-center gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:px-8 lg:px-10"
       >
-        {categoryPills.map((cat) => {
-          const isActive = activeCategory === cat.id;
+        {/* Mostrar toda la carta */}
+        <motion.button
+          ref={activeCategory === null ? activeButtonRef : null}
+          type="button"
+          whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
+          onClick={() => onSelect(null)}
+          aria-pressed={activeCategory === null}
+          className={`flex h-9 shrink-0 snap-start items-center justify-center rounded-full border px-4 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-accent-terracotta) ${
+            activeCategory === null
+              ? "border-(--color-accent-terracotta) bg-(--color-accent-terracotta) text-white shadow-sm"
+              : "border-(--color-border) bg-(--color-bg-surface) text-(--color-text-muted) hover:border-(--color-border-dark) hover:bg-(--color-bg-subtle) hover:text-(--color-text-primary)"
+          }`}
+        >
+          Todas
+        </motion.button>
+
+        {/* Categorías individuales */}
+        {categories.map((category) => {
+          const isActive = activeCategory === category.id;
+
           return (
             <motion.button
-              key={cat.id}
-              ref={isActive ? activeBtnRef : null}
-              whileTap={{ scale: 0.98 }}
-              whileHover={{ y: -1 }}
-              onClick={() => onSelect(cat.id)}
-              className={`category-pill flex-shrink-0 snap-start border px-3.5 py-1.5 text-[12px] font-medium tracking-wide transition-all ${
+              key={category.id}
+              ref={isActive ? activeButtonRef : null}
+              type="button"
+              whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
+              onClick={() => onSelect(isActive ? null : category.id)}
+              aria-pressed={isActive}
+              aria-label={
                 isActive
-                  ? 'border-[var(--color-accent-terracotta)] bg-[var(--color-accent-terracotta)] text-[var(--color-text-primary)] shadow-[0_10px_20px_rgba(194,65,12,0.15)]'
-                  : 'border-[var(--color-border)] bg-[var(--color-bg-surface)] text-[var(--color-text-muted)] hover:border-[var(--color-border-dark)] hover:bg-[var(--color-bg-subtle)] hover:text-[var(--color-text-primary)]'
+                  ? `Quitar filtro de ${category.label}`
+                  : `Mostrar solamente ${category.label}`
+              }
+              title={
+                isActive
+                  ? "Quitar filtro de categoría"
+                  : `Ver ${category.label}`
+              }
+              className={`inline-flex h-9 shrink-0 snap-start items-center justify-center gap-2 rounded-full border px-4 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-accent-terracotta) ${
+                isActive
+                  ? "border-(--color-accent-terracotta) bg-(--color-accent-terracotta) text-white shadow-sm"
+                  : "border-(--color-border) bg-(--color-bg-surface) text-(--color-text-muted) hover:border-(--color-border-dark) hover:bg-(--color-bg-subtle) hover:text-(--color-text-primary)"
               }`}
             >
-              <span className="flex items-center gap-1.5">
-                <span className={isActive ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-subtle)]'}>
-                  {cat.iconSvg}
-                </span>
-                <span>{cat.label}</span>
-              </span>
+              <span>{category.label}</span>
+
+              {isActive && (
+                <X
+                  size={13}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                  className="opacity-80"
+                />
+              )}
             </motion.button>
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 }

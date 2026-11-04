@@ -39,4 +39,3 @@ export const restaurant: RestaurantInfo = {
   currencySymbol: '$',
 };
 
-export const restaurantId = process.env.NEXT_PUBLIC_RESTAURANT_ID ?? '';

@@ -1,5 +1,12 @@
 import { supabaseAdmin } from "@food360/database";
-import { Router, type Response } from "express";
+import { Router } from "express";
+
+import {
+  findPublishedRestaurant,
+  isSchemaNotReady,
+  sendSchemaError,
+  toPublicResponse,
+} from "../lib/public-restaurant.js";
 
 export const publicRestaurantsRouter: Router = Router();
 
@@ -7,81 +14,6 @@ const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;
 const RESERVED_SLUGS = new Set(["menu", "cart", "r"]);
 const PUBLIC_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const SCHEMA_NOT_READY_CODES = new Set([
-  "PGRST204",
-  "PGRST205",
-  "42703",
-  "42P01",
-]);
-
-function isSchemaNotReady(code: string): boolean {
-  return SCHEMA_NOT_READY_CODES.has(code);
-}
-
-function sendSchemaError(res: Response) {
-  return res.status(503).json({
-    success: false,
-    error: "La página pública aún no está habilitada en este entorno",
-  });
-}
-
-async function findPublishedRestaurant(
-  column: "slug" | "public_id",
-  value: string,
-) {
-  const result = await supabaseAdmin
-    .from("restaurants")
-    .select(
-      "public_id, name, slug, phone, address, currency, wifi_ssid, wifi_password, instagram_url, tiktok_url, whatsapp_url, google_business_url",
-    )
-    .eq(column, value)
-    .eq("public_page_published", true)
-    .maybeSingle();
-  if (!result.error || !isSchemaNotReady(result.error.code)) return result;
-  return supabaseAdmin
-    .from("restaurants")
-    .select(
-      "public_id, name, slug, phone, address, currency, wifi_ssid, wifi_password, instagram_url, google_business_url",
-    )
-    .eq(column, value)
-    .eq("public_page_published", true)
-    .maybeSingle();
-}
-
-function toPublicResponse(data: {
-  public_id: string;
-  name: string;
-  slug: string;
-  phone: string | null;
-  address: string | null;
-  currency: string | null;
-  wifi_ssid: string | null;
-  wifi_password: string | null;
-  instagram_url?: string | null;
-  tiktok_url?: string | null;
-  whatsapp_url?: string | null;
-  google_business_url?: string | null;
-}) {
-  return {
-    success: true,
-    data: {
-      publicId: data.public_id,
-      name: data.name,
-      slug: data.slug,
-      phone: data.phone,
-      address: data.address,
-      currency: data.currency,
-      instagramUrl: data.instagram_url ?? null,
-      tiktokUrl: data.tiktok_url ?? null,
-      whatsappUrl: data.whatsapp_url ?? null,
-      googleBusinessUrl: data.google_business_url ?? null,
-      wifi: {
-        ssid: data.wifi_ssid,
-        password: data.wifi_password,
-      },
-    },
-  };
-}
 
 publicRestaurantsRouter.get("/id/:publicId", async (req, res) => {
   res.set("Cache-Control", "no-store");
@@ -321,6 +253,160 @@ publicRestaurantsRouter.get("/:slug/menu", async (req, res) => {
   }
 });
 
+// GET /api/v1/public/restaurants/:slug/schedule
+// Devuelve los horarios públicos del restaurante.
+
+publicRestaurantsRouter.get("/:slug/schedule", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  const rawSlug = req.params.slug;
+  const slug = typeof rawSlug === "string" ? rawSlug : "";
+
+  if (!slug || !SLUG_PATTERN.test(slug) || RESERVED_SLUGS.has(slug)) {
+    return res.status(400).json({
+      success: false,
+      error: "El slug no es válido",
+    });
+  }
+
+  try {
+    // 1. Buscar restaurante publicado por slug actual.
+    const { data: currentRestaurant, error: restaurantError } =
+      await supabaseAdmin
+        .from("restaurants")
+        .select("id, timezone")
+        .eq("slug", slug)
+        .eq("public_page_published", true)
+        .maybeSingle();
+
+    if (restaurantError) {
+      console.error(
+        "Error consultando restaurante para horarios públicos:",
+        restaurantError.code,
+      );
+
+      if (isSchemaNotReady(restaurantError.code)) {
+        return sendSchemaError(res);
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: "No se pudieron consultar los horarios",
+      });
+    }
+
+    let restaurantId = currentRestaurant?.id ?? null;
+    let timezone = currentRestaurant?.timezone ?? null;
+
+    // 2. Resolver slug anterior mediante alias.
+    if (!restaurantId) {
+      const { data: alias, error: aliasError } = await supabaseAdmin
+        .from("restaurant_slug_aliases")
+        .select("restaurant_id")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (aliasError) {
+        console.error(
+          "Error consultando alias para horarios públicos:",
+          aliasError.code,
+        );
+
+        if (isSchemaNotReady(aliasError.code)) {
+          return sendSchemaError(res);
+        }
+
+        return res.status(500).json({
+          success: false,
+          error: "No se pudieron resolver los horarios",
+        });
+      }
+
+      if (alias) {
+        const { data: aliasedRestaurant, error: aliasedError } =
+          await supabaseAdmin
+            .from("restaurants")
+            .select("id, timezone")
+            .eq("id", alias.restaurant_id)
+            .eq("public_page_published", true)
+            .maybeSingle();
+
+        if (aliasedError) {
+          console.error(
+            "Error consultando restaurante por alias:",
+            aliasedError.code,
+          );
+
+          if (isSchemaNotReady(aliasedError.code)) {
+            return sendSchemaError(res);
+          }
+
+          return res.status(500).json({
+            success: false,
+            error: "No se pudieron cargar los horarios",
+          });
+        }
+
+        restaurantId = aliasedRestaurant?.id ?? null;
+        timezone = aliasedRestaurant?.timezone ?? null;
+      }
+    }
+
+    if (!restaurantId) {
+      return res.status(404).json({
+        success: false,
+        error: "No se encontró el restaurante publicado",
+      });
+    }
+
+    // 3. Consultar únicamente los horarios públicos.
+    const { data: schedules, error: schedulesError } = await supabaseAdmin
+      .from("restaurant_schedules")
+      .select(
+        [
+          "day_of_week",
+          "is_open",
+          "open_time",
+          "close_time",
+          "closes_next_day",
+        ].join(", "),
+      )
+      .eq("restaurant_id", restaurantId)
+      .order("day_of_week", { ascending: true });
+
+    if (schedulesError) {
+      console.error(
+        "Error consultando horarios públicos:",
+        schedulesError.code,
+      );
+
+      if (isSchemaNotReady(schedulesError.code)) {
+        return sendSchemaError(res);
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: "No se pudieron cargar los horarios",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        timezone,
+        schedules: schedules ?? [],
+      },
+    });
+  } catch (error) {
+    console.error("Error en GET /public/restaurants/:slug/schedule:", error);
+
+    return res.status(500).json({
+      success: false,
+      error: "No se pudieron cargar los horarios del restaurante",
+    });
+  }
+});
+
 publicRestaurantsRouter.get("/:slug", async (req, res) => {
   res.set("Cache-Control", "no-store");
 
@@ -365,24 +451,10 @@ publicRestaurantsRouter.get("/:slug", async (req, res) => {
       }
 
       if (alias) {
-        let restaurantResult = await supabaseAdmin
-          .from("restaurants")
-          .select(
-            "public_id, name, slug, phone, address, currency, wifi_ssid, wifi_password, instagram_url, tiktok_url, whatsapp_url, google_business_url",
-          )
-          .eq("id", alias.restaurant_id)
-          .eq("public_page_published", true)
-          .maybeSingle();
-        if (restaurantResult.error && isSchemaNotReady(restaurantResult.error.code)) {
-          restaurantResult = await supabaseAdmin
-            .from("restaurants")
-            .select(
-              "public_id, name, slug, phone, address, currency, wifi_ssid, wifi_password, instagram_url, google_business_url",
-            )
-            .eq("id", alias.restaurant_id)
-            .eq("public_page_published", true)
-            .maybeSingle();
-        }
+        const restaurantResult = await findPublishedRestaurant(
+          "id",
+          alias.restaurant_id,
+        );
         data = restaurantResult.data;
         error = restaurantResult.error;
       }

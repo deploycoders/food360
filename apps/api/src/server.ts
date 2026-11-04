@@ -17,6 +17,8 @@ import { teamInvitationAcceptRouter } from "./routes/team-invitations-public.rou
 import { onboardingRouter } from "./routes/onboarding.routes.js";
 import { uploadsRouter } from "./routes/uploads.routes.js";
 import { publicRestaurantsRouter } from "./routes/public-restaurants.routes.js";
+import { publicTablesRouter } from "./routes/public-tables.routes.js";
+import { publicOrdersRouter } from "./routes/public-orders.routes.js";
 
 import { swaggerSpec } from "./swagger.js";
 import { verifyAuth } from "../auth.middleware.js";
@@ -45,6 +47,8 @@ export const createServer = (): Express => {
     .use("/api/v1/uploads", verifyAuth, uploadsRouter)
     .use("/api/v1/onboarding", onboardingRouter)
     .use("/api/v1/public/restaurants", publicRestaurantsRouter)
+    .use("/api/v1/public/tables", publicTablesRouter)
+    .use("/api/v1/public/orders", publicOrdersRouter)
     .use("/api/v1/team/invitations/accept", teamInvitationAcceptRouter)
     .use("/api/v1/team", verifyAuth, teamRouter);
 

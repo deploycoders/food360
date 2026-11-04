@@ -1,11 +1,15 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
+import type { ReactNode } from "react";
+
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   Check,
   ChevronDown,
   PackageCheck,
   PackageX,
+  RotateCcw,
   Search,
   SlidersHorizontal,
   X,
@@ -51,22 +55,33 @@ export function MenuFilters({
 }: MenuFiltersProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const activeCategories = useMemo(() => {
-    return categories
-      .filter((category) => category.isActive)
-      .sort((a, b) => {
-        if (a.sortOrder !== b.sortOrder) {
-          return a.sortOrder - b.sortOrder;
-        }
+  const filtersPanelId = useId();
+  const shouldReduceMotion = useReducedMotion();
 
-        return a.name.localeCompare(b.name);
-      });
-  }, [categories]);
+  const activeCategories = useMemo(
+    () =>
+      categories
+        .filter((category) => category.isActive)
+        .sort((a, b) => {
+          if (a.sortOrder !== b.sortOrder) {
+            return a.sortOrder - b.sortOrder;
+          }
+
+          return a.name.localeCompare(b.name);
+        }),
+    [categories],
+  );
+
+  const showStatusFilter = Boolean(onStatusChange);
+  const showAvailabilityFilter = Boolean(onAvailabilityChange);
+  const canExpandFilters = showStatusFilter || showAvailabilityFilter;
+
+  const advancedFiltersCount =
+    Number(showStatusFilter && selectedStatus !== "all") +
+    Number(showAvailabilityFilter && selectedAvailability !== "all");
 
   const activeFiltersCount =
-    (selectedCategory !== "Todos" ? 1 : 0) +
-    (selectedStatus !== "all" ? 1 : 0) +
-    (selectedAvailability !== "all" ? 1 : 0);
+    Number(selectedCategory !== "Todos") + advancedFiltersCount;
 
   const hasActiveFilters = activeFiltersCount > 0;
 
@@ -76,205 +91,246 @@ export function MenuFilters({
     onAvailabilityChange?.("all");
   };
 
-  const selectedCategoryName =
-    selectedCategory === "Todos"
-      ? "Todas"
-      : (activeCategories.find((category) => category.id === selectedCategory)
-          ?.name ?? "Categoría");
-
   return (
-    <div className="space-y-3 border-b border-border pb-3">
-      {/* Search + actions */}
-      <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* Search */}
-        <div className="relative min-w-0 flex-1 sm:max-w-md">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <div className="space-y-4 border-b border-border pb-4">
+      {/* Búsqueda y controles */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          role="search"
+          className="group flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-xl border border-border bg-card px-3.5 transition-colors focus-within:border-accent sm:max-w-md"
+        >
+          <Search
+            size={17}
+            strokeWidth={1.8}
+            aria-hidden="true"
+            className="shrink-0 text-muted-foreground transition-colors group-focus-within:text-accent"
+          />
 
           <input
             type="text"
-            placeholder="Buscar por nombre o descripción..."
+            role="searchbox"
+            placeholder="Buscar productos..."
             value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="h-10 w-full rounded-xl border border-border bg-card py-2.5 pl-10 pr-9 text-xs text-foreground placeholder:text-muted-foreground transition-all focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/10"
+            onChange={(event) => onSearchChange(event.target.value)}
+            autoComplete="off"
+            aria-label="Buscar productos por nombre o descripción"
+            className="h-full w-full min-w-0 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
           />
 
-          {searchQuery && (
+          {searchQuery.length > 0 && (
             <button
               type="button"
               onClick={() => onSearchChange("")}
-              className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label="Limpiar búsqueda"
+              title="Limpiar búsqueda"
+              className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
             >
-              <X className="h-3.5 w-3.5" />
+              <X size={15} strokeWidth={1.8} aria-hidden="true" />
             </button>
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-between gap-2 sm:justify-end">
-          {/* Filters button */}
-          <button
-            type="button"
-            onClick={() => setFiltersOpen((open) => !open)}
-            className={`relative inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border px-3.5 text-xs font-medium transition-all ${
-              filtersOpen || hasActiveFilters
-                ? "border-accent/40 bg-accent/10 text-foreground"
-                : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-
-            <span>Filtros</span>
-
-            {activeFiltersCount > 0 && (
-              <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-accent px-1 text-[9px] font-bold text-accent-foreground">
-                {activeFiltersCount}
-              </span>
-            )}
-
-            <ChevronDown
-              className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                filtersOpen ? "rotate-180" : ""
+        {/* Acciones */}
+        <div className="flex items-center justify-end gap-2">
+          {canExpandFilters && (
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((open) => !open)}
+              aria-expanded={filtersOpen}
+              aria-controls={filtersPanelId}
+              className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl border px-3.5 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                filtersOpen || advancedFiltersCount > 0
+                  ? "border-accent/40 bg-accent/10 text-foreground"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
-            />
-          </button>
+            >
+              <SlidersHorizontal size={15} strokeWidth={1.8} />
 
-          {/* View mode */}
+              <span>Filtros</span>
+
+              {advancedFiltersCount > 0 && (
+                <span className="flex size-5 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-accent-foreground">
+                  {advancedFiltersCount}
+                </span>
+              )}
+
+              <ChevronDown
+                size={14}
+                strokeWidth={1.8}
+                aria-hidden="true"
+                className={`transition-transform duration-200 ${
+                  filtersOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+          )}
+
           <ViewModeToggle value={viewMode} onChange={onViewModeChange} />
         </div>
       </div>
 
-      {/* Advanced filters */}
-      {filtersOpen && (
-        <div className="rounded-2xl border border-border bg-card p-3.5 shadow-sm">
-          <div className="space-y-5">
-            {/* Category */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Categoría
-                </div>
+      {/* Categorías de acceso rápido */}
+      <section aria-label="Categorías de productos" className="space-y-2.5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-xs font-semibold text-foreground">
+              Categorías
+            </h3>
 
-                <span className="text-[10px] text-muted-foreground">
-                  {selectedCategoryName}
-                </span>
-              </div>
-
-              <div className="scrollbar-none flex gap-1.5 overflow-x-auto pb-0.5">
-                <FilterChip
-                  active={selectedCategory === "Todos"}
-                  onClick={() => onSelectCategory("Todos")}
-                >
-                  Todas
-                </FilterChip>
-
-                {activeCategories.map((category) => (
-                  <FilterChip
-                    key={category.id}
-                    active={selectedCategory === category.id}
-                    onClick={() => onSelectCategory(category.id)}
-                  >
-                    {category.name}
-                  </FilterChip>
-                ))}
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="h-px bg-border" />
-
-            {/* Status + Availability */}
-            <div className="grid gap-5 lg:grid-cols-2">
-              {/* Product status */}
-              <div className="space-y-2">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Estado
-                </div>
-
-                <div className="flex flex-wrap gap-1.5">
-                  <FilterChip
-                    active={selectedStatus === "all"}
-                    onClick={() => onStatusChange?.("all")}
-                  >
-                    Todos
-                  </FilterChip>
-
-                  <FilterChip
-                    active={selectedStatus === "active"}
-                    onClick={() => onStatusChange?.("active")}
-                    icon={<Check className="h-3.5 w-3.5" />}
-                  >
-                    Activos
-                  </FilterChip>
-
-                  <FilterChip
-                    active={selectedStatus === "inactive"}
-                    onClick={() => onStatusChange?.("inactive")}
-                  >
-                    Inactivos
-                  </FilterChip>
-                </div>
-              </div>
-
-              {/* Availability */}
-              <div className="space-y-2">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Disponibilidad
-                </div>
-
-                <div className="flex flex-wrap gap-1.5">
-                  <FilterChip
-                    active={selectedAvailability === "all"}
-                    onClick={() => onAvailabilityChange?.("all")}
-                  >
-                    Todas
-                  </FilterChip>
-
-                  <FilterChip
-                    active={selectedAvailability === "available"}
-                    onClick={() => onAvailabilityChange?.("available")}
-                    icon={<PackageCheck className="h-3.5 w-3.5" />}
-                  >
-                    Disponibles
-                  </FilterChip>
-
-                  <FilterChip
-                    active={selectedAvailability === "out_of_stock"}
-                    onClick={() => onAvailabilityChange?.("out_of_stock")}
-                    icon={<PackageX className="h-3.5 w-3.5" />}
-                  >
-                    Agotados
-                  </FilterChip>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            {hasActiveFilters && (
-              <>
-                <div className="h-px bg-border" />
-
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[11px] text-muted-foreground">
-                    {activeFiltersCount}{" "}
-                    {activeFiltersCount === 1
-                      ? "filtro aplicado"
-                      : "filtros aplicados"}
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                    className="inline-flex h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    Limpiar filtros
-                  </button>
-                </div>
-              </>
-            )}
+            <span className="text-[11px] text-muted-foreground">
+              {activeCategories.length}
+            </span>
           </div>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
+            >
+              <RotateCcw size={12} strokeWidth={1.8} />
+              Restablecer
+            </button>
+          )}
         </div>
+
+        <div
+          role="group"
+          aria-label="Filtrar por categoría"
+          className="flex gap-2 overflow-x-auto pb-1"
+        >
+          <FilterChip
+            active={selectedCategory === "Todos"}
+            onClick={() => onSelectCategory("Todos")}
+          >
+            Todas
+          </FilterChip>
+
+          {activeCategories.map((category) => (
+            <FilterChip
+              key={category.id}
+              active={selectedCategory === category.id}
+              onClick={() => onSelectCategory(category.id)}
+            >
+              {category.name}
+            </FilterChip>
+          ))}
+        </div>
+      </section>
+
+      {/* Filtros avanzados */}
+      {canExpandFilters && (
+        <AnimatePresence initial={false}>
+          {filtersOpen && (
+            <motion.div
+              id={filtersPanelId}
+              key="advanced-menu-filters"
+              initial={shouldReduceMotion ? false : { opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={shouldReduceMotion ? undefined : { opacity: 0, y: -6 }}
+              transition={{
+                duration: shouldReduceMotion ? 0 : 0.18,
+                ease: "easeOut",
+              }}
+              className="overflow-hidden"
+            >
+              <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
+                <div className="mb-4 flex items-center justify-between gap-3 border-b border-border pb-3">
+                  <div className="space-y-0.5">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Filtros avanzados
+                    </h3>
+
+                    <p className="text-xs text-muted-foreground">
+                      Refina los productos de tu menú.
+                    </p>
+                  </div>
+
+                  {advancedFiltersCount > 0 && (
+                    <span className="shrink-0 rounded-full bg-accent/10 px-2.5 py-1 text-[10px] font-semibold text-accent">
+                      {advancedFiltersCount} activos
+                    </span>
+                  )}
+                </div>
+
+                <div
+                  className={`grid gap-5 ${
+                    showStatusFilter && showAvailabilityFilter
+                      ? "sm:grid-cols-2"
+                      : "grid-cols-1"
+                  }`}
+                >
+                  {/* Estado */}
+                  {showStatusFilter && (
+                    <div className="space-y-2.5">
+                      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Estado del producto
+                      </h4>
+
+                      <div className="flex flex-wrap gap-2">
+                        <FilterChip
+                          active={selectedStatus === "all"}
+                          onClick={() => onStatusChange?.("all")}
+                        >
+                          Todos
+                        </FilterChip>
+
+                        <FilterChip
+                          active={selectedStatus === "active"}
+                          onClick={() => onStatusChange?.("active")}
+                          icon={<Check size={14} />}
+                        >
+                          Activos
+                        </FilterChip>
+
+                        <FilterChip
+                          active={selectedStatus === "inactive"}
+                          onClick={() => onStatusChange?.("inactive")}
+                        >
+                          Inactivos
+                        </FilterChip>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Disponibilidad */}
+                  {showAvailabilityFilter && (
+                    <div className="space-y-2.5">
+                      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Disponibilidad
+                      </h4>
+
+                      <div className="flex flex-wrap gap-2">
+                        <FilterChip
+                          active={selectedAvailability === "all"}
+                          onClick={() => onAvailabilityChange?.("all")}
+                        >
+                          Todas
+                        </FilterChip>
+
+                        <FilterChip
+                          active={selectedAvailability === "available"}
+                          onClick={() => onAvailabilityChange?.("available")}
+                          icon={<PackageCheck size={14} />}
+                        >
+                          Disponibles
+                        </FilterChip>
+
+                        <FilterChip
+                          active={selectedAvailability === "out_of_stock"}
+                          onClick={() => onAvailabilityChange?.("out_of_stock")}
+                          icon={<PackageX size={14} />}
+                        >
+                          Agotados
+                        </FilterChip>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       )}
     </div>
   );
@@ -283,8 +339,8 @@ export function MenuFilters({
 interface FilterChipProps {
   active: boolean;
   onClick: () => void;
-  children: React.ReactNode;
-  icon?: React.ReactNode;
+  children: ReactNode;
+  icon?: ReactNode;
 }
 
 function FilterChip({ active, onClick, children, icon }: FilterChipProps) {
@@ -292,10 +348,11 @@ function FilterChip({ active, onClick, children, icon }: FilterChipProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-medium transition-all ${
+      aria-pressed={active}
+      className={`inline-flex h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full border px-3.5 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
         active
-          ? "bg-foreground text-background shadow-sm"
-          : "border border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+          ? "border-accent bg-accent text-accent-foreground shadow-sm"
+          : "border-border bg-card text-muted-foreground hover:border-accent/40 hover:bg-muted hover:text-foreground"
       }`}
     >
       {icon}

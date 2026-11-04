@@ -5,6 +5,7 @@ export interface PublicRestaurant {
   phone: string | null;
   address: string | null;
   currency: string | null;
+  logoUrl?: string | null; // NUEVO
   instagramUrl?: string | null;
   tiktokUrl?: string | null;
   whatsappUrl?: string | null;
@@ -18,6 +19,18 @@ export interface PublicRestaurant {
 export interface PublicRestaurantResponse {
   success: boolean;
   data?: PublicRestaurant;
+  error?: string;
+}
+
+export interface PublicTable {
+  publicCode: string;
+  tableNumber: number;
+  restaurant: PublicRestaurant;
+}
+
+export interface PublicTableResponse {
+  success: boolean;
+  data?: PublicTable;
   error?: string;
 }
 
@@ -44,4 +57,35 @@ export interface PublicRestaurantPageUpdate {
   googleBusinessUrl?: string | null;
   tiktokUrl?: string | null;
   whatsappUrl?: string | null;
+}
+
+export type PublicOrderOrigin = "DINE_IN" | "TAKEAWAY" | "DELIVERY";
+
+export interface PublicOrderItemInput {
+  productId: string;
+  quantity: number;
+}
+
+export interface CreatePublicOrderPayload {
+  restaurantPublicId: string;
+  fullName: string;
+  phone: string;
+  origin: PublicOrderOrigin;
+  tablePublicCode?: string | null;
+  items: PublicOrderItemInput[];
+}
+
+export interface PublicOrderData {
+  orderId: string;
+  origin: PublicOrderOrigin;
+  tableNumber: number | null;
+  status: string;
+  totalAmount: number;
+  itemCount: number;
+}
+
+export interface PublicOrderResponse {
+  success: boolean;
+  data?: PublicOrderData;
+  error?: string;
 }

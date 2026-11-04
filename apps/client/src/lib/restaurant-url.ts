@@ -7,18 +7,29 @@ export function getRestaurantUrl(
   pathname: "" | "/menu",
   isSubdomain: boolean,
   requestHeaders: HeaderReader,
+  searchParams?: Record<string, string | undefined | null>,
 ): string {
   const encodedSlug = encodeURIComponent(slug);
 
+  const query = new URLSearchParams();
+  if (searchParams) {
+    for (const [key, value] of Object.entries(searchParams)) {
+      if (value != null && value !== "") {
+        query.set(key, value);
+      }
+    }
+  }
+  const search = query.toString() ? `?${query.toString()}` : "";
+
   // En las rutas actuales conservamos el comportamiento existente.
   if (!isSubdomain) {
-    return `/${encodedSlug}${pathname}`;
+    return `/${encodedSlug}${pathname}${search}`;
   }
 
   const rootDomain = process.env.FOOD360_ROOT_DOMAIN?.trim().toLowerCase();
 
   if (!rootDomain) {
-    return `/${encodedSlug}${pathname}`;
+    return `/${encodedSlug}${pathname}${search}`;
   }
 
   const isLocalDomain =
@@ -42,5 +53,5 @@ export function getRestaurantUrl(
 
   const protocol = isLocalDomain ? "http" : "https";
 
-  return `${protocol}://${encodedSlug}.${rootDomain}${port}${pathname}`;
+  return `${protocol}://${encodedSlug}.${rootDomain}${port}${pathname}${search}`;
 }

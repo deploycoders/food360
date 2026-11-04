@@ -2,7 +2,12 @@ import { createClient } from "@supabase/supabase-js";
 import { Router, type Request, type Response } from "express";
 import { hasPermission } from "@food360/types";
 import { supabaseAdmin } from "@food360/database";
-
+import { randomUUID } from "node:crypto";
+import {
+  deleteImageFromCloudinary,
+  uploadImageToCloudinary,
+} from "../lib/cloudinary.js";
+import { receiveImage } from "../lib/image-upload.js";
 
 export const configurationRouter: Router = Router();
 
@@ -80,13 +85,21 @@ function isAvailablePublicSlug(value: string): boolean {
   return PUBLIC_SLUG_PATTERN.test(value) && !RESERVED_PUBLIC_SLUGS.has(value);
 }
 
-function isSecurePlatformUrl(value: unknown, hosts: string[]): value is string | null {
+function isSecurePlatformUrl(
+  value: unknown,
+  hosts: string[],
+): value is string | null {
   if (value === null) return true;
   if (typeof value !== "string" || value.length > 500) return false;
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && hosts.includes(url.hostname.toLowerCase()) &&
-      !url.username && !url.password && !url.port;
+    return (
+      url.protocol === "https:" &&
+      hosts.includes(url.hostname.toLowerCase()) &&
+      !url.username &&
+      !url.password &&
+      !url.port
+    );
   } catch {
     return false;
   }
@@ -104,21 +117,245 @@ type PublicPageRow = {
   whatsapp_url?: string | null;
 };
 
-async function getPublicPageRow(supabase: ReturnType<typeof getSupabaseForRequest>, restaurantId: string) {
-  const full = await supabase.from("restaurants")
-    .select("public_id, slug, public_page_published, wifi_ssid, wifi_password, instagram_url, google_business_url, tiktok_url, whatsapp_url")
-    .eq("id", restaurantId).maybeSingle();
-  if (!full.error) return { data: full.data as PublicPageRow | null, error: null, socialFieldsAvailable: true };
-  if (!isSchemaNotReadyCode(full.error.code)) return { data: null, error: full.error, socialFieldsAvailable: false };
-  const compatible = await supabase.from("restaurants")
-    .select("public_id, slug, public_page_published, wifi_ssid, wifi_password, instagram_url, google_business_url")
-    .eq("id", restaurantId).maybeSingle();
-  return { data: compatible.data as PublicPageRow | null, error: compatible.error, socialFieldsAvailable: false };
+async function getPublicPageRow(
+  supabase: ReturnType<typeof getSupabaseForRequest>,
+  restaurantId: string,
+) {
+  const full = await supabase
+    .from("restaurants")
+    .select(
+      "public_id, slug, public_page_published, wifi_ssid, wifi_password, instagram_url, google_business_url, tiktok_url, whatsapp_url",
+    )
+    .eq("id", restaurantId)
+    .maybeSingle();
+  if (!full.error)
+    return {
+      data: full.data as PublicPageRow | null,
+      error: null,
+      socialFieldsAvailable: true,
+    };
+  if (!isSchemaNotReadyCode(full.error.code))
+    return { data: null, error: full.error, socialFieldsAvailable: false };
+  const compatible = await supabase
+    .from("restaurants")
+    .select(
+      "public_id, slug, public_page_published, wifi_ssid, wifi_password, instagram_url, google_business_url",
+    )
+    .eq("id", restaurantId)
+    .maybeSingle();
+  return {
+    data: compatible.data as PublicPageRow | null,
+    error: compatible.error,
+    socialFieldsAvailable: false,
+  };
 }
 
 function isSchemaNotReadyCode(code: string): boolean {
   return ["PGRST204", "PGRST205", "42703", "42P01"].includes(code);
 }
+
+// ============================================================
+// POST /api/v1/configuration/logo
+// Subir o reemplazar el logo del restaurante
+// ============================================================
+
+configurationRouter.post(
+  "/logo",
+  (req, res, next) => {
+    if (!hasPermission(req.userRole, "settings.update")) {
+      return sendError(
+        res,
+        403,
+        "No tienes permiso para modificar el logo del restaurante",
+      );
+    }
+
+    next();
+  },
+  receiveImage,
+  async (req, res) => {
+    let newPublicId: string | null = null;
+
+    try {
+      const supabase = getSupabaseForRequest(req);
+
+      // Obtener el identificador del logo anterior.
+      const { data: current, error: currentError } = await supabase
+        .from("restaurants")
+        .select("logo_public_id")
+        .eq("id", req.restaurantId)
+        .maybeSingle();
+
+      if (currentError) {
+        console.error("Error consultando logo actual:", currentError);
+        return sendError(res, 500, "No se pudo consultar el logo actual");
+      }
+
+      if (!current) {
+        return sendError(res, 404, "No se encontró el restaurante");
+      }
+
+      // Subir el nuevo logo a una carpeta específica del restaurante.
+      const uploaded = await uploadImageToCloudinary(req.file!.buffer, {
+        folder: `food360/restaurants/${req.restaurantId}/branding`,
+        publicId: `logo-${randomUUID()}`,
+      });
+
+      newPublicId = uploaded.publicId;
+
+      // Guardar la nueva URL y su identificador en Supabase.
+      const { data, error } = await supabase
+        .from("restaurants")
+        .update({
+          logo_url: uploaded.secureUrl,
+          logo_public_id: uploaded.publicId,
+        })
+        .eq("id", req.restaurantId)
+        .select("logo_url")
+        .maybeSingle();
+
+      if (error || !data) {
+        // Si falla Supabase, evitar dejar la nueva imagen abandonada.
+        try {
+          await deleteImageFromCloudinary(uploaded.publicId);
+          newPublicId = null;
+        } catch (cleanupError) {
+          console.error(
+            "No se pudo limpiar el nuevo logo en Cloudinary:",
+            cleanupError,
+          );
+        }
+
+        console.error("Error guardando logo:", error);
+
+        return sendError(
+          res,
+          500,
+          "No se pudo guardar el logo del restaurante",
+        );
+      }
+
+      // La nueva imagen ya está guardada. Ahora eliminamos la anterior.
+      if (
+        current.logo_public_id &&
+        current.logo_public_id !== uploaded.publicId
+      ) {
+        try {
+          await deleteImageFromCloudinary(current.logo_public_id);
+        } catch (cleanupError) {
+          console.error(
+            "No se pudo eliminar el logo anterior de Cloudinary:",
+            cleanupError,
+          );
+        }
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          logo_url: data.logo_url,
+        },
+      });
+    } catch (error) {
+      // Limpieza de la nueva imagen si ocurre un error inesperado.
+      if (newPublicId) {
+        try {
+          await deleteImageFromCloudinary(newPublicId);
+        } catch (cleanupError) {
+          console.error(
+            "Error limpiando imagen tras fallo inesperado:",
+            cleanupError,
+          );
+        }
+      }
+
+      console.error("Error en POST /configuration/logo:", error);
+
+      return sendError(
+        res,
+        500,
+        "Error interno al subir el logo del restaurante",
+      );
+    }
+  },
+);
+
+// ============================================================
+// DELETE /api/v1/configuration/logo
+// Eliminar el logo del restaurante
+// ============================================================
+
+configurationRouter.delete("/logo", async (req, res) => {
+  if (!hasPermission(req.userRole, "settings.update")) {
+    return sendError(
+      res,
+      403,
+      "No tienes permiso para modificar el logo del restaurante",
+    );
+  }
+
+  try {
+    const supabase = getSupabaseForRequest(req);
+
+    const { data: current, error: currentError } = await supabase
+      .from("restaurants")
+      .select("logo_public_id")
+      .eq("id", req.restaurantId)
+      .maybeSingle();
+
+    if (currentError) {
+      console.error("Error consultando logo:", currentError);
+      return sendError(res, 500, "No se pudo consultar el logo");
+    }
+
+    if (!current) {
+      return sendError(res, 404, "No se encontró el restaurante");
+    }
+
+    // Primero quitar la referencia de la base de datos.
+    const { data, error } = await supabase
+      .from("restaurants")
+      .update({
+        logo_url: null,
+        logo_public_id: null,
+      })
+      .eq("id", req.restaurantId)
+      .select("id")
+      .maybeSingle();
+
+    if (error || !data) {
+      console.error("Error eliminando referencia del logo:", error);
+      return sendError(res, 500, "No se pudo eliminar el logo");
+    }
+
+    // Después eliminar el archivo de Cloudinary.
+    if (current.logo_public_id) {
+      try {
+        await deleteImageFromCloudinary(current.logo_public_id);
+      } catch (cleanupError) {
+        console.error(
+          "No se pudo eliminar el archivo del logo en Cloudinary:",
+          cleanupError,
+        );
+      }
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        logo_url: null,
+      },
+    });
+  } catch (error) {
+    console.error("Error en DELETE /configuration/logo:", error);
+
+    return sendError(
+      res,
+      500,
+      "Error interno al eliminar el logo del restaurante",
+    );
+  }
+});
 
 configurationRouter.get("/public-page", async (req, res) => {
   if (!hasPermission(req.userRole, "settings.view")) {
@@ -127,13 +364,18 @@ configurationRouter.get("/public-page", async (req, res) => {
 
   try {
     const supabase = getSupabaseForRequest(req);
-    const { data, error, socialFieldsAvailable } = await getPublicPageRow(supabase, req.restaurantId);
+    const { data, error, socialFieldsAvailable } = await getPublicPageRow(
+      supabase,
+      req.restaurantId,
+    );
 
     if (error) {
       console.error("Error consultando publicación pública:", error);
       return sendError(
         res,
-        ["PGRST204", "PGRST205", "42703", "42P01"].includes(error.code) ? 503 : 500,
+        ["PGRST204", "PGRST205", "42703", "42P01"].includes(error.code)
+          ? 503
+          : 500,
         ["PGRST204", "PGRST205", "42703", "42P01"].includes(error.code)
           ? "La función de página pública aún no está habilitada en este entorno"
           : "No se pudo cargar la configuración de página pública",
@@ -165,7 +407,11 @@ configurationRouter.get("/public-page", async (req, res) => {
 
 configurationRouter.patch("/public-page", async (req, res) => {
   if (!hasPermission(req.userRole, "settings.update")) {
-    return sendError(res, 403, "No tienes permiso para modificar esta configuración");
+    return sendError(
+      res,
+      403,
+      "No tienes permiso para modificar esta configuración",
+    );
   }
 
   if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
@@ -197,16 +443,33 @@ configurationRouter.patch("/public-page", async (req, res) => {
     instagramUrl: ["instagram.com", "www.instagram.com"],
     tiktokUrl: ["tiktok.com", "www.tiktok.com", "vm.tiktok.com"],
     whatsappUrl: ["wa.me"],
-    googleBusinessUrl: ["google.com", "www.google.com", "maps.google.com", "maps.app.goo.gl", "goo.gl"],
+    googleBusinessUrl: [
+      "google.com",
+      "www.google.com",
+      "maps.google.com",
+      "maps.app.goo.gl",
+      "goo.gl",
+    ],
   };
   for (const [field, hosts] of Object.entries(socialHosts)) {
     if (field in body && !isSecurePlatformUrl(body[field], hosts)) {
-      return sendError(res, 400, `La URL de ${field} debe ser HTTPS y pertenecer a la plataforma correspondiente`);
+      return sendError(
+        res,
+        400,
+        `La URL de ${field} debe ser HTTPS y pertenecer a la plataforma correspondiente`,
+      );
     }
   }
-  if ("whatsappUrl" in body && typeof body.whatsappUrl === "string" &&
-      !/^https:\/\/wa\.me\/(?:\+?\d{5,15})(?:[/?#].*)?$/i.test(body.whatsappUrl)) {
-    return sendError(res, 400, "WhatsApp debe usar un enlace https://wa.me/ con un número válido");
+  if (
+    "whatsappUrl" in body &&
+    typeof body.whatsappUrl === "string" &&
+    !/^https:\/\/wa\.me\/(?:\+?\d{5,15})(?:[/?#].*)?$/i.test(body.whatsappUrl)
+  ) {
+    return sendError(
+      res,
+      400,
+      "WhatsApp debe usar un enlace https://wa.me/ con un número válido",
+    );
   }
 
   if (
@@ -230,8 +493,10 @@ configurationRouter.patch("/public-page", async (req, res) => {
         new TextEncoder().encode(body.wifiName.trim()).length > 32)) ||
     ("wifiPassword" in body &&
       (typeof body.wifiPassword !== "string" ||
-        body.wifiPassword.length < 8 || body.wifiPassword.length > 63)) ||
-    ("clearWifiPassword" in body && typeof body.clearWifiPassword !== "boolean") ||
+        body.wifiPassword.length < 8 ||
+        body.wifiPassword.length > 63)) ||
+    ("clearWifiPassword" in body &&
+      typeof body.clearWifiPassword !== "boolean") ||
     (body.clearWifiPassword === true && "wifiPassword" in body)
   ) {
     return sendError(res, 400, "Revisa el nombre de red y la contraseña Wi-Fi");
@@ -242,9 +507,16 @@ configurationRouter.patch("/public-page", async (req, res) => {
 
     const socialFieldsRequested = "tiktokUrl" in body || "whatsappUrl" in body;
     if (socialFieldsRequested) {
-      const currentSettings = await getPublicPageRow(supabase, req.restaurantId);
+      const currentSettings = await getPublicPageRow(
+        supabase,
+        req.restaurantId,
+      );
       if (currentSettings.error || !currentSettings.socialFieldsAvailable) {
-        return sendError(res, 503, "TikTok y WhatsApp requieren que el propietario añada tiktok_url y whatsapp_url a restaurants");
+        return sendError(
+          res,
+          503,
+          "TikTok y WhatsApp requieren que el propietario añada tiktok_url y whatsapp_url a restaurants",
+        );
       }
     }
 
@@ -257,11 +529,19 @@ configurationRouter.patch("/public-page", async (req, res) => {
 
       if (currentError || !current) {
         console.error("Error validando slug antes de publicar:", currentError);
-        return sendError(res, 500, "No se pudo verificar el slug del restaurante");
+        return sendError(
+          res,
+          500,
+          "No se pudo verificar el slug del restaurante",
+        );
       }
 
       if (!isAvailablePublicSlug(current.slug)) {
-        return sendError(res, 400, "Actualiza el slug antes de publicar la página");
+        return sendError(
+          res,
+          400,
+          "Actualiza el slug antes de publicar la página",
+        );
       }
     }
 
@@ -275,7 +555,11 @@ configurationRouter.patch("/public-page", async (req, res) => {
 
       if (lookupError) {
         console.error("Error verificando slug del restaurante:", lookupError);
-        return sendError(res, 500, "No se pudo verificar la disponibilidad del slug");
+        return sendError(
+          res,
+          500,
+          "No se pudo verificar la disponibilidad del slug",
+        );
       }
 
       if (collision) return sendError(res, 409, "Este slug ya está en uso");
@@ -289,10 +573,19 @@ configurationRouter.patch("/public-page", async (req, res) => {
 
       if (aliasError && aliasError.code !== "PGRST205") {
         console.error("Error verificando alias de slug:", aliasError);
-        return sendError(res, 500, "No se pudo verificar la disponibilidad del slug");
+        return sendError(
+          res,
+          500,
+          "No se pudo verificar la disponibilidad del slug",
+        );
       }
 
-      if (alias) return sendError(res, 409, "Este slug ya fue usado por otro restaurante");
+      if (alias)
+        return sendError(
+          res,
+          409,
+          "Este slug ya fue usado por otro restaurante",
+        );
     }
 
     const updates: Record<string, unknown> = {};
@@ -310,7 +603,8 @@ configurationRouter.patch("/public-page", async (req, res) => {
       updates.wifi_password = body.wifiPassword;
     }
     if ("instagramUrl" in body) updates.instagram_url = body.instagramUrl;
-    if ("googleBusinessUrl" in body) updates.google_business_url = body.googleBusinessUrl;
+    if ("googleBusinessUrl" in body)
+      updates.google_business_url = body.googleBusinessUrl;
     if ("tiktokUrl" in body) updates.tiktok_url = body.tiktokUrl;
     if ("whatsappUrl" in body) updates.whatsapp_url = body.whatsappUrl;
 
@@ -338,11 +632,16 @@ configurationRouter.patch("/public-page", async (req, res) => {
       return sendError(res, 500, "No se pudo guardar la configuración pública");
     }
 
-    if (!data) return sendError(res, 403, "No se pudo actualizar el restaurante");
+    if (!data)
+      return sendError(res, 403, "No se pudo actualizar el restaurante");
 
     const current = await getPublicPageRow(supabase, req.restaurantId);
     if (current.error || !current.data) {
-      return sendError(res, 500, "Se guardó la configuración, pero no se pudo volver a cargar");
+      return sendError(
+        res,
+        500,
+        "Se guardó la configuración, pero no se pudo volver a cargar",
+      );
     }
     return res.json({
       success: true,
@@ -392,6 +691,7 @@ configurationRouter.get("/", async (req, res) => {
           "currency",
           "timezone",
           "tax_rate",
+          "logo_url",
         ].join(", "),
       )
       .eq("id", req.restaurantId)
@@ -440,7 +740,11 @@ configurationRouter.get("/", async (req, res) => {
 
 configurationRouter.patch("/", async (req, res) => {
   if (!hasPermission(req.userRole, "settings.update")) {
-    return sendError(res, 403, "No tienes permiso para modificar esta configuración");
+    return sendError(
+      res,
+      403,
+      "No tienes permiso para modificar esta configuración",
+    );
   }
 
   try {
@@ -585,6 +889,7 @@ configurationRouter.patch("/", async (req, res) => {
           "currency",
           "timezone",
           "tax_rate",
+          "logo_url",
         ].join(", "),
       )
       .maybeSingle();
@@ -674,153 +979,154 @@ configurationRouter.get("/schedule", async (req, res) => {
 // Solo owner
 // ============================================================
 
-configurationRouter.put(
-  "/schedule",
-  async (req, res) => {
-    if (!hasPermission(req.userRole, "settings.update")) {
-      return sendError(res, 403, "No tienes permiso para modificar esta configuración");
+configurationRouter.put("/schedule", async (req, res) => {
+  if (!hasPermission(req.userRole, "settings.update")) {
+    return sendError(
+      res,
+      403,
+      "No tienes permiso para modificar esta configuración",
+    );
+  }
+
+  try {
+    if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+      return sendError(res, 400, "El cuerpo de la solicitud no es válido");
+    }
+    const body = req.body as JsonObject;
+    const days = body.days;
+
+    if (!Array.isArray(days) || days.length !== 7) {
+      return sendError(res, 400, "Debes enviar los siete días de la semana");
     }
 
-    try {
-      if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
-        return sendError(res, 400, "El cuerpo de la solicitud no es válido");
+    const seenDays = new Set<number>();
+
+    const rows: {
+      restaurant_id: string;
+      day_of_week: number;
+      is_open: boolean;
+      open_time: string | null;
+      close_time: string | null;
+      closes_next_day: boolean;
+    }[] = [];
+
+    for (const item of days) {
+      if (!item || typeof item !== "object") {
+        return sendError(res, 400, "Hay un horario inválido");
       }
-      const body = req.body as JsonObject;
-      const days = body.days;
 
-      if (!Array.isArray(days) || days.length !== 7) {
-        return sendError(res, 400, "Debes enviar los siete días de la semana");
+      const day = item as JsonObject;
+      const dayOfWeek = day.day_of_week;
+
+      if (
+        typeof dayOfWeek !== "number" ||
+        !Number.isInteger(dayOfWeek) ||
+        dayOfWeek < 0 ||
+        dayOfWeek > 6 ||
+        seenDays.has(dayOfWeek)
+      ) {
+        return sendError(
+          res,
+          400,
+          "Los días deben ser únicos y estar entre 0 y 6",
+        );
       }
 
-      const seenDays = new Set<number>();
+      if (typeof day.is_open !== "boolean") {
+        return sendError(
+          res,
+          400,
+          `El estado de apertura del día ${dayOfWeek} no es válido`,
+        );
+      }
 
-      const rows: {
-        restaurant_id: string;
-        day_of_week: number;
-        is_open: boolean;
-        open_time: string | null;
-        close_time: string | null;
-        closes_next_day: boolean;
-      }[] = [];
+      seenDays.add(dayOfWeek);
 
-      for (const item of days) {
-        if (!item || typeof item !== "object") {
-          return sendError(res, 400, "Hay un horario inválido");
-        }
-
-        const day = item as JsonObject;
-        const dayOfWeek = day.day_of_week;
-
-        if (
-          typeof dayOfWeek !== "number" ||
-          !Number.isInteger(dayOfWeek) ||
-          dayOfWeek < 0 ||
-          dayOfWeek > 6 ||
-          seenDays.has(dayOfWeek)
-        ) {
-          return sendError(
-            res,
-            400,
-            "Los días deben ser únicos y estar entre 0 y 6",
-          );
-        }
-
-        if (typeof day.is_open !== "boolean") {
-          return sendError(
-            res,
-            400,
-            `El estado de apertura del día ${dayOfWeek} no es válido`,
-          );
-        }
-
-        seenDays.add(dayOfWeek);
-
-        if (!day.is_open) {
-          rows.push({
-            restaurant_id: req.restaurantId,
-            day_of_week: dayOfWeek,
-            is_open: false,
-            open_time: null,
-            close_time: null,
-            closes_next_day: false,
-          });
-
-          continue;
-        }
-
-        if (
-          !isValidTime(day.open_time) ||
-          !isValidTime(day.close_time) ||
-          typeof day.closes_next_day !== "boolean"
-        ) {
-          return sendError(
-            res,
-            400,
-            `El horario del día ${dayOfWeek} no es válido`,
-          );
-        }
-
-        const opensAt = day.open_time;
-        const closesAt = day.close_time;
-
-        if (
-          (day.closes_next_day && closesAt > opensAt) ||
-          (!day.closes_next_day && closesAt <= opensAt)
-        ) {
-          return sendError(
-            res,
-            400,
-            `Revisa la hora de cierre del día ${dayOfWeek}`,
-          );
-        }
-
+      if (!day.is_open) {
         rows.push({
           restaurant_id: req.restaurantId,
           day_of_week: dayOfWeek,
-          is_open: true,
-          open_time: opensAt,
-          close_time: closesAt,
-          closes_next_day: day.closes_next_day,
+          is_open: false,
+          open_time: null,
+          close_time: null,
+          closes_next_day: false,
         });
+
+        continue;
       }
 
-      const supabase = getSupabaseForRequest(req);
-
-      const { data, error } = await supabase
-        .from("restaurant_schedules")
-        .upsert(rows, {
-          onConflict: "restaurant_id,day_of_week",
-        })
-        .select(
-          [
-            "id",
-            "restaurant_id",
-            "day_of_week",
-            "is_open",
-            "open_time",
-            "close_time",
-            "closes_next_day",
-          ].join(", "),
-        );
-
-      if (error) {
-        console.error("Error guardando horarios:", error);
-
+      if (
+        !isValidTime(day.open_time) ||
+        !isValidTime(day.close_time) ||
+        typeof day.closes_next_day !== "boolean"
+      ) {
         return sendError(
           res,
-          500,
-          "No se pudieron guardar los horarios del restaurante",
+          400,
+          `El horario del día ${dayOfWeek} no es válido`,
         );
       }
 
-      return res.json({
-        success: true,
-        data,
-      });
-    } catch (error) {
-      console.error("Error en PUT /configuration/schedule:", error);
+      const opensAt = day.open_time;
+      const closesAt = day.close_time;
 
-      return sendError(res, 500, "Error interno al guardar los horarios");
+      if (
+        (day.closes_next_day && closesAt > opensAt) ||
+        (!day.closes_next_day && closesAt <= opensAt)
+      ) {
+        return sendError(
+          res,
+          400,
+          `Revisa la hora de cierre del día ${dayOfWeek}`,
+        );
+      }
+
+      rows.push({
+        restaurant_id: req.restaurantId,
+        day_of_week: dayOfWeek,
+        is_open: true,
+        open_time: opensAt,
+        close_time: closesAt,
+        closes_next_day: day.closes_next_day,
+      });
     }
-  },
-);
+
+    const supabase = getSupabaseForRequest(req);
+
+    const { data, error } = await supabase
+      .from("restaurant_schedules")
+      .upsert(rows, {
+        onConflict: "restaurant_id,day_of_week",
+      })
+      .select(
+        [
+          "id",
+          "restaurant_id",
+          "day_of_week",
+          "is_open",
+          "open_time",
+          "close_time",
+          "closes_next_day",
+        ].join(", "),
+      );
+
+    if (error) {
+      console.error("Error guardando horarios:", error);
+
+      return sendError(
+        res,
+        500,
+        "No se pudieron guardar los horarios del restaurante",
+      );
+    }
+
+    return res.json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error("Error en PUT /configuration/schedule:", error);
+
+    return sendError(res, 500, "Error interno al guardar los horarios");
+  }
+});

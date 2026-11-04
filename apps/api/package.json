@@ -12,7 +12,10 @@
     "test": "jest --detectOpenHandles"
   },
   "jest": {
-    "preset": "@repo/jest-presets/node"
+    "preset": "@repo/jest-presets/node",
+    "moduleNameMapper": {
+      "^(\\..*)\\.js$": "$1"
+    }
   },
   "dependencies": {
     "@food360/database": "workspace:*",

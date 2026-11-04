@@ -33,11 +33,14 @@ export function SettingsView() {
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingSchedule, setSavingSchedule] = useState(false);
-  const [savedProfile, setSavedProfile] = useState<BusinessProfile>(EMPTY_PROFILE);
+  const [savedProfile, setSavedProfile] =
+    useState<BusinessProfile>(EMPTY_PROFILE);
   const [savedSchedules, setSavedSchedules] = useState<DaySchedule[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const [loadedRestaurantId, setLoadedRestaurantId] = useState<string | null>(null);
+  const [loadedRestaurantId, setLoadedRestaurantId] = useState<string | null>(
+    null,
+  );
 
   const canUpdate = role !== null && hasPermission(role, "settings.update");
 
@@ -89,12 +92,25 @@ export function SettingsView() {
     };
   }, [restaurantId, restaurantLoading, loadAttempt]);
 
+  function handleLogoChange(logoUrl: string | undefined) {
+    setProfile((current) => ({
+      ...current,
+      logoUrl,
+    }));
+
+    setSavedProfile((current) => ({
+      ...current,
+      logoUrl,
+    }));
+  }
+
   async function handleSaveProfile() {
     if (loading || savingProfile || loadError || !canUpdate) return;
     const submittedProfile = { ...profile };
     try {
       setSavingProfile(true);
-      const updated = await configurationService.updateProfile(submittedProfile);
+      const updated =
+        await configurationService.updateProfile(submittedProfile);
       setProfile(updated);
       setSavedProfile(updated);
       showTimedToast("Perfil guardado correctamente", "success");
@@ -114,7 +130,8 @@ export function SettingsView() {
     const submittedSchedules = schedules.map((day) => ({ ...day }));
     try {
       setSavingSchedule(true);
-      const updated = await configurationService.updateSchedules(submittedSchedules);
+      const updated =
+        await configurationService.updateSchedules(submittedSchedules);
       setSchedules(updated);
       setSavedSchedules(updated);
       showTimedToast("Horarios guardados correctamente", "success");
@@ -141,7 +158,10 @@ export function SettingsView() {
           Cargando configuración...
         </div>
       ) : loadError ? (
-        <div className="rounded-xl border border-border bg-card p-5" role="alert">
+        <div
+          className="rounded-xl border border-border bg-card p-5"
+          role="alert"
+        >
           <p className="text-sm font-semibold text-foreground">
             No se pudo cargar la configuración.
           </p>
@@ -157,24 +177,35 @@ export function SettingsView() {
       ) : (
         <div className="pt-2">
           <div hidden={activeTab !== "profile"}>
-            <fieldset disabled={!canUpdate || savingProfile} className="m-0 min-w-0 border-0 p-0">
+            <fieldset
+              disabled={!canUpdate || savingProfile}
+              className="m-0 min-w-0 border-0 p-0"
+            >
               <ProfileSettingsTab
                 data={profile}
                 onChange={setProfile}
+                onLogoChange={handleLogoChange}
                 onSave={() => void handleSaveProfile()}
                 isSaving={savingProfile}
-                hasChanges={JSON.stringify(profile) !== JSON.stringify(savedProfile)}
+                hasChanges={
+                  JSON.stringify(profile) !== JSON.stringify(savedProfile)
+                }
               />
             </fieldset>
           </div>
           <div hidden={activeTab !== "schedule"}>
-            <fieldset disabled={!canUpdate || savingSchedule} className="m-0 min-w-0 border-0 p-0">
+            <fieldset
+              disabled={!canUpdate || savingSchedule}
+              className="m-0 min-w-0 border-0 p-0"
+            >
               <ScheduleSettingsTab
                 schedules={schedules}
                 onChange={setSchedules}
                 onSave={() => void handleSaveSchedule()}
                 isSaving={savingSchedule}
-                hasChanges={JSON.stringify(schedules) !== JSON.stringify(savedSchedules)}
+                hasChanges={
+                  JSON.stringify(schedules) !== JSON.stringify(savedSchedules)
+                }
               />
             </fieldset>
           </div>

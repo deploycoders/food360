@@ -8,6 +8,7 @@ import {
   type ReactNode,
   Suspense,
 } from "react";
+import { ThemeToggle } from "@/components/public/theme-toggle";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -15,6 +16,8 @@ import { gsap } from "gsap";
 
 import { restaurant } from "@/data/restaurant";
 import { useSession } from "@/context/SessionContext";
+import { useTenant } from "@/context/TenantContext";
+import { formatOriginLabel, parseDemoOriginId } from "@/lib/formatters";
 import WifiModal from "@/components/shared/wifi-modal";
 import DirectionsModal from "@/components/shared/directions-modal";
 
@@ -193,12 +196,18 @@ function CardDescription({
 
 function HubContent() {
   const searchParams = useSearchParams();
-  const { originId, originType, setOrigin } = useSession();
+  const { origin, tableNumber, setDemoOrigin, isReady: sessionReady } =
+    useSession();
+  const { setDemoTenant, isReady: tenantReady } = useTenant();
 
   const [isWifiOpen, setIsWifiOpen] = useState(false);
   const [isDirectionsOpen, setIsDirectionsOpen] = useState(false);
 
   const pageRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setDemoTenant();
+  }, [setDemoTenant]);
 
   // GSAP: las tarjetas nunca deben quedarse con opacity: 0.
   useLayoutEffect(() => {
@@ -263,20 +272,19 @@ function HubContent() {
     };
   }, []);
 
-  // Captura el identificador de mesa/canal desde la URL.
+  // Captura el identificador de mesa/canal desde la URL (hub demo only).
   useEffect(() => {
+    if (!tenantReady || !sessionReady) return;
     const id = searchParams.get("id");
-    if (id) setOrigin(id);
-  }, [searchParams, setOrigin]);
+    if (!id) return;
+    const parsed = parseDemoOriginId(id);
+    setDemoOrigin({
+      origin: parsed.origin,
+      tableNumber: parsed.tableNumber,
+    });
+  }, [searchParams, setDemoOrigin, tenantReady, sessionReady]);
 
-  const originLabel =
-    originType === "mesa"
-      ? `Mesa ${originId.replace(/^mesa-?/i, "")}`
-      : originType === "delivery"
-        ? "Servicio Delivery"
-        : originId !== "walk-in"
-          ? originId
-          : null;
+  const originLabel = formatOriginLabel(origin, tableNumber);
 
   const whatsappUrl = `https://wa.me/${restaurant.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(restaurant.whatsappMessage)}`;
 
@@ -285,6 +293,9 @@ function HubContent() {
       ref={pageRef}
       className="flex w-full flex-1 flex-col bg-(--color-bg-base) text-(--color-text-body)"
     >
+      <div className="absolute right-4 top-4 z-20">
+        <ThemeToggle />
+      </div>
       {/* Hero */}
       <header
         data-animate="hub-hero"
@@ -356,27 +367,29 @@ function HubContent() {
           </div>
         </Link>
 
-        {restaurant.wifi.ssid && <button
-          type="button"
-          onClick={() => setIsWifiOpen(true)}
-          data-animate="hub-card"
-          className="editorial-hub-card group w-full p-4 text-left"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3.5">
-              <IconBadge>
-                <Icon name="wifi" />
-              </IconBadge>
-              <CardDescription
-                title="Red Wi-Fi de Cortesía"
-                description="Conéctate a la red del restaurante"
-              />
+        {restaurant.wifi.ssid && (
+          <button
+            type="button"
+            onClick={() => setIsWifiOpen(true)}
+            data-animate="hub-card"
+            className="editorial-hub-card group w-full p-4 text-left"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3.5">
+                <IconBadge>
+                  <Icon name="wifi" />
+                </IconBadge>
+                <CardDescription
+                  title="Red Wi-Fi de Cortesía"
+                  description="Conéctate a la red del restaurante"
+                />
+              </div>
+              <span className="shrink-0 rounded-full bg-(--color-accent-terracotta) px-3 py-1.5 text-[11px] font-semibold text-white">
+                Ver Clave
+              </span>
             </div>
-            <span className="shrink-0 rounded-full bg-(--color-accent-terracotta) px-3 py-1.5 text-[11px] font-semibold text-white">
-              Ver Clave
-            </span>
-          </div>
-        </button>}
+          </button>
+        )}
 
         <a
           href={whatsappUrl}

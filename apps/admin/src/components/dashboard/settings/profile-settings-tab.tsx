@@ -13,6 +13,7 @@ import {
   LoaderCircle,
   Save,
 } from "lucide-react";
+import { RestaurantLogoUpload } from "./restaurant-logo-upload";
 
 interface ProfileSettingsTabProps {
   data: BusinessProfile;
@@ -20,12 +21,14 @@ interface ProfileSettingsTabProps {
   onSave: () => void;
   isSaving: boolean;
   hasChanges: boolean;
+  onLogoChange: (logoUrl: string | undefined) => void;
 }
 
 export function ProfileSettingsTab({
   data,
   onChange,
   onSave,
+  onLogoChange,
   isSaving,
   hasChanges,
 }: ProfileSettingsTabProps) {
@@ -47,6 +50,9 @@ export function ProfileSettingsTab({
           Datos públicos del negocio visibles en facturas e impresiones de
           comanda.
         </p>
+        <div className="mt-5">
+          <RestaurantLogoUpload value={data.logoUrl} onChange={onLogoChange} />
+        </div>
 
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Nombre Comercial */}
@@ -210,8 +216,17 @@ export function ProfileSettingsTab({
         </div>
       </div>
       <div className="flex justify-end">
-        <button type="button" onClick={onSave} disabled={isSaving || !hasChanges} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-accent px-4 text-xs font-semibold text-accent-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
-          {isSaving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={isSaving || !hasChanges}
+          className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-accent px-4 text-xs font-semibold text-accent-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isSaving ? (
+            <LoaderCircle className="h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4" />
+          )}
           Guardar perfil
         </button>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from '@/context/SessionContext';
+import { formatOriginLabel } from '@/lib/formatters';
 
 interface HeaderProps {
   onOpenSearch: () => void;
@@ -9,15 +10,9 @@ interface HeaderProps {
 }
 
 export default function Header({ onOpenSearch, onOpenWifi, brandName = '360 food' }: HeaderProps) {
-  const { originId, originType } = useSession();
+  const { origin, tableNumber } = useSession();
 
-  const originLabel = originType === 'mesa'
-    ? `Mesa ${originId.replace(/^mesa-?/i, '')}`
-    : originType === 'delivery'
-    ? 'Delivery'
-    : originId !== 'walk-in'
-    ? originId
-    : null;
+  const originLabel = formatOriginLabel(origin, tableNumber);
 
   return (
     <header className="sticky top-0 z-40 bg-[var(--color-header-bg)] text-[var(--color-header-text)] px-4 py-3 shadow-md flex items-center justify-between">
@@ -38,22 +33,26 @@ export default function Header({ onOpenSearch, onOpenWifi, brandName = '360 food
         {/* Search button */}
         <button
           onClick={onOpenSearch}
-          aria-label="Buscar platos"
-          className="w-9 h-9 rounded-full bg-[var(--color-header-icon-bg)] hover:bg-[var(--color-header-icon-hover)] flex items-center justify-center text-white transition-colors cursor-pointer"
+          className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
+          aria-label="Buscar"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
           </svg>
         </button>
 
         {/* WiFi button */}
         <button
           onClick={onOpenWifi}
-          aria-label="Wi-Fi del local"
-          className="w-9 h-9 rounded-full bg-[var(--color-header-icon-bg)] hover:bg-[var(--color-header-icon-hover)] flex items-center justify-center text-white transition-colors cursor-pointer"
+          className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
+          aria-label="WiFi"
         >
-          <svg className="w-4 h-4 stroke-current" fill="none" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" />
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+            <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+            <circle cx="12" cy="20" r="1" />
           </svg>
         </button>
       </div>
