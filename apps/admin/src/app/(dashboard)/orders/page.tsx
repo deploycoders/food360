@@ -24,6 +24,7 @@ import { useRestaurant } from "@/context/RestaurantContext";
 import type { Product } from "@/types/menu";
 import type { Order, OrderStatus } from "@/types/order";
 import type { ApiOrderStatus } from "@/types/order-api";
+import { useRouter } from "next/navigation";
 
 const PAGE_SIZE = 10;
 
@@ -105,6 +106,7 @@ export default function OrdersPage() {
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const router = useRouter();
 
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -166,6 +168,28 @@ export default function OrdersPage() {
   useEffect(() => {
     void loadOrders();
   }, [loadOrders]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("createOrder") !== "true") return;
+
+    // Abrir el formulario de creación.
+    setCreateOrderOpen(true);
+
+    // Eliminar el parámetro para evitar que vuelva a abrirse
+    // al recargar la página.
+    params.delete("createOrder");
+
+    // Conservar cualquier otro parámetro que pudiera existir.
+    const remainingParams = params.toString();
+
+    const cleanUrl = `${window.location.pathname}${
+      remainingParams ? `?${remainingParams}` : ""
+    }${window.location.hash}`;
+
+    router.replace(cleanUrl, { scroll: false });
+  }, [router]);
 
   useEffect(() => {
     if (createOrderOpen) {

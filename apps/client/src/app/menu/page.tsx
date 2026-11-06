@@ -27,6 +27,7 @@ import MenuProductCard from "@/components/menu/menu-product-card";
 import MenuTopHeader from "@/components/menu/menu-top-header";
 import PopularPicksGrid from "@/components/menu/popular-picks-grid";
 import DirectionsModal from "@/components/shared/directions-modal";
+import MenuCategoryCarousel from "@/components/menu/menu-category-carrousel";
 
 export default function MenuPage({
   initialSlug,
@@ -35,7 +36,7 @@ export default function MenuPage({
   initialSlug?: string;
   restaurant?: PublicRestaurant;
 } = {}) {
-  const { setCustomerData } = useSession();
+  const { customerData, setCustomerData } = useSession();
   const { setTenant, setDemoTenant } = useTenant();
 
   const [categories, setCategories] = useState<CategoryInfo[]>([]);
@@ -405,11 +406,12 @@ export default function MenuPage({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3.5 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
+            <div className="grid pt-5 grid-cols-2 gap-3.5 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
               {filteredItems.map((item) => (
                 <MenuProductCard
                   key={item.id}
                   item={item}
+                  categories={categories} // <--- Aquí también
                   onSelectItem={(dish) => setSelectedItem(dish)}
                 />
               ))}
@@ -438,38 +440,21 @@ export default function MenuPage({
               </div>
             )}
 
-          <main className="mx-auto mt-3 w-full max-w-7xl space-y-7 px-4 md:mt-5 md:space-y-10 md:px-8 lg:px-10">
+          <main className="mx-auto mt-4 w-full max-w-7xl space-y-9 px-4 sm:px-5 md:mt-6 md:space-y-11">
             {categorySections.length > 0 ? (
               categorySections.map(({ category, items }) => (
-                <section key={category.id} id={category.id}>
-                  <div className="mb-3 flex items-baseline justify-between gap-3 border-b border-(--color-border-subtle) pb-2">
-                    <div>
-                      <h2 className="font-editorial-serif text-xl font-medium text-(--color-text-primary) sm:text-2xl">
-                        {category.label}
-                      </h2>
-
-                      <p className="text-[12px] text-(--color-text-muted)">
-                        {items.length}{" "}
-                        {items.length === 1
-                          ? "creación disponible"
-                          : "creaciones disponibles"}
-                      </p>
-                    </div>
-
-                    <span className="text-right text-[10px] font-medium uppercase tracking-[0.08em] text-(--color-text-subtle)">
-                      {category.label}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
-                    {items.map((item) => (
-                      <MenuProductCard
-                        key={item.id}
-                        item={item}
-                        onSelectItem={(dish) => setSelectedItem(dish)}
-                      />
-                    ))}
-                  </div>
+                <section
+                  key={category.id}
+                  id={category.id}
+                  className="scroll-mt-36"
+                >
+                  <MenuCategoryCarousel
+                    categoryId={String(category.id)}
+                    categoryLabel={category.label}
+                    categories={categories}
+                    items={items}
+                    onSelectItem={(dish) => setSelectedItem(dish)}
+                  />
                 </section>
               ))
             ) : (
@@ -494,7 +479,7 @@ export default function MenuPage({
                   <button
                     type="button"
                     onClick={() => handleCategorySelect(null)}
-                    className="mt-4 inline-flex items-center justify-center rounded-full bg-(--color-accent-terracotta) px-4 py-2 text-xs font-medium text-(--color-text-primary) transition-opacity hover:opacity-90"
+                    className="mt-4 inline-flex items-center justify-center rounded-full bg-(--color-accent-terracotta) px-4 py-2 text-xs font-medium text-white transition-opacity hover:opacity-90"
                   >
                     Ver toda la carta
                   </button>
@@ -537,6 +522,8 @@ export default function MenuPage({
 
       <CustomerForm
         isOpen={isCustomerModalOpen}
+        onClose={() => setIsCustomerModalOpen(false)}
+        initialData={customerData}
         onSubmit={(data) => {
           setCustomerData(data);
           setIsCustomerModalOpen(false);

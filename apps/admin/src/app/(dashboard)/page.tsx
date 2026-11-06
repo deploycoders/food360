@@ -502,7 +502,7 @@ export default function DashboardPage() {
           </button>
 
           <Link
-            href="/orders/new"
+            href="/orders?createOrder=true"
             className="inline-flex h-9 items-center gap-2 rounded-lg bg-accent px-3.5 text-xs font-semibold text-accent-foreground shadow-sm transition-opacity hover:opacity-90"
           >
             <Plus className="h-4 w-4" />

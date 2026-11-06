@@ -94,27 +94,24 @@ export function MenuFilters({
   return (
     <div className="space-y-4 border-b border-border pb-4">
       {/* Búsqueda y controles */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div
-          role="search"
-          className="group flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-xl border border-border bg-card px-3.5 transition-colors focus-within:border-accent sm:max-w-md"
-        >
+      <div className="flex gap-3 sm:items-center sm:justify-between">
+        <div role="search" className="relative min-w-0 flex-1 lg:max-w-md">
           <Search
-            size={17}
+            size={19}
             strokeWidth={1.8}
             aria-hidden="true"
-            className="shrink-0 text-muted-foreground transition-colors group-focus-within:text-accent"
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
           />
 
           <input
             type="text"
             role="searchbox"
-            placeholder="Buscar productos..."
+            placeholder="Buscar productos por nombre o descripción..."
             value={searchQuery}
             onChange={(event) => onSearchChange(event.target.value)}
             autoComplete="off"
             aria-label="Buscar productos por nombre o descripción"
-            className="h-full w-full min-w-0 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            className="h-10 w-full rounded-xl border border-border bg-card py-2.5 pl-10 pr-9 text-xs text-foreground placeholder:text-muted-foreground transition-all focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/10"
           />
 
           {searchQuery.length > 0 && (
@@ -123,9 +120,9 @@ export function MenuFilters({
               onClick={() => onSearchChange("")}
               aria-label="Limpiar búsqueda"
               title="Limpiar búsqueda"
-              className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
+              className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              <X size={15} strokeWidth={1.8} aria-hidden="true" />
+              <X className="h-3.5 w-3.5" />
             </button>
           )}
         </div>

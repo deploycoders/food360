@@ -238,7 +238,7 @@ export function Sidebar({ userRole = "admin", isOpen, onClose }: SidebarProps) {
                         className={`
                           flex items-center justify-between
                           rounded-lg px-3 py-2
-                          text-xs font-medium
+                          text-sm md:text-xs font-medium
                           transition-colors
 
                           ${

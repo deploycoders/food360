@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+
 import type { Table } from "@food360/types";
 
 import { TableCard } from "./table-card";
@@ -22,12 +23,12 @@ export function TablesGrid({
 }: TablesGridProps) {
   if (tables.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 text-center">
+      <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center sm:p-10">
         <p className="text-sm font-semibold text-foreground">
           No hay mesas configuradas
         </p>
 
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">
           Crea la primera mesa para comenzar a gestionar el salón.
         </p>
       </div>
@@ -35,7 +36,15 @@ export function TablesGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+    <div
+      className="
+        grid w-full
+        grid-cols-[repeat(auto-fit,minmax(min(100%,250px),1fr))]
+        items-stretch
+        gap-4
+        sm:gap-5
+      "
+    >
       {tables.map((table) => (
         <TableCard
           key={table.id}

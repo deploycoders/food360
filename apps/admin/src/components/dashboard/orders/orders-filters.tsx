@@ -58,18 +58,24 @@ export function OrdersFilters({
   return (
     <section className="space-y-4">
       {/* Selector compacto: Activas / Historial */}
-      <div className="flex justify-end">
+
+      <div className="flex w-full justify-end">
         <div
           role="tablist"
           aria-label="Tipo de órdenes"
-          className="inline-flex w-fit max-w-full items-center gap-1 rounded-xl border border-border bg-muted/40 p-1"
+          className="
+      inline-flex w-full max-w-full items-center
+      gap-1 rounded-xl border border-border
+      bg-muted/40 p-1
+      md:w-fit
+    "
         >
           <button
             type="button"
             role="tab"
             aria-selected={view === "active"}
             onClick={() => onViewChange("active")}
-            className={`inline-flex h-10 flex-none items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-all ${
+            className={`inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg px-2 text-xs font-semibold transition-all md:flex-none md:px-4 ${
               view === "active"
                 ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
@@ -100,7 +106,7 @@ export function OrdersFilters({
             role="tab"
             aria-selected={view === "history"}
             onClick={() => onViewChange("history")}
-            className={`inline-flex h-10 flex-none items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-all ${
+            className={`inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg px-2 text-xs font-semibold transition-all md:flex-none md:px-4 ${
               view === "history"
                 ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
