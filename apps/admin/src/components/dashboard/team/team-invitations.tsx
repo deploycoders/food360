@@ -162,24 +162,38 @@ export function TeamInvitations({
                 status: "pending",
                 expires_at: result.expiresAt,
                 updated_at: new Date().toISOString(),
+                email_sent_at: result.emailSentAt,
+                email_error: result.emailError,
               }
             : item,
         ),
       );
 
+      let copied = false;
+
       try {
         await navigator.clipboard.writeText(result.inviteUrl);
-
-        showTimedToast(
-          "Enlace generado y copiado",
-          "success",
-          `La invitación de ${invitation.email} ya está lista para compartir.`,
-        );
+        copied = true;
       } catch {
+        // El enlace seguirá disponible en la interfaz para copiarlo manualmente.
+      }
+
+      if (result.emailSent) {
         showTimedToast(
-          "Enlace generado",
+          "Invitación renovada y correo enviado",
           "success",
-          "El enlace está disponible abajo. Cópialo para compartirlo.",
+          copied
+            ? `Se envió un nuevo correo a ${invitation.email} y el enlace quedó copiado.`
+            : `Se envió un nuevo correo a ${invitation.email}. Puedes copiar el enlace desde la tarjeta.`,
+        );
+      } else {
+        showTimedToast(
+          "Enlace renovado, pero correo no enviado",
+          "warning",
+          result.emailError ??
+            (copied
+              ? "El enlace quedó copiado. Puedes compartirlo manualmente."
+              : "Puedes copiar el enlace desde la tarjeta y compartirlo manualmente."),
         );
       }
     } catch (err) {

@@ -1,7 +1,10 @@
 import { Router, type Request, type Response } from "express";
+import { createHash, randomBytes } from "node:crypto";
+
 import { supabaseAdmin } from "@food360/database";
 import { hasPermission, type AppRole, type Permission } from "@food360/types";
-import { createHash, randomBytes } from "node:crypto";
+
+import { sendTeamInvitationEmail } from "../services/mail.service.js";
 
 export const teamRouter: Router = Router();
 
@@ -28,9 +31,17 @@ interface UpdateTeamMemberRoleBody {
   role?: unknown;
 }
 
+interface InvitationEmailDeliveryResult {
+  emailSent: boolean;
+  emailSentAt: string | null;
+  emailError: string | null;
+}
+
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
+
+const INVITATION_EXPIRY_DAYS = 7;
 
 function getRestaurantId(req: Request): string | null {
   return req.restaurantId ?? null;
@@ -68,8 +79,6 @@ function isUuid(value: string): boolean {
   );
 }
 
-const INVITATION_EXPIRY_DAYS = 7;
-
 function hashInvitationToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
@@ -86,6 +95,89 @@ function getInvitationUrl(token: string): string {
   }
 
   return `${baseUrl.replace(/\/+$/, "")}/invite/${token}`;
+}
+
+async function getAuthenticatedUserId(req: Request): Promise<string> {
+  const authorization = req.headers.authorization;
+  const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+
+  if (!token) {
+    throw new Error("No se encontró el token de autenticación.");
+  }
+
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
+
+  if (error || !data.user) {
+    throw new Error("No se pudo identificar al usuario autenticado.");
+  }
+
+  return data.user.id;
+}
+
+/**
+ * Envía el correo y registra el resultado en team_invitations.
+ *
+ * La invitación se conserva aunque falle el envío para que
+ * el administrador pueda compartir el enlace manualmente.
+ */
+async function deliverInvitationEmail(
+  invitationId: string,
+  input: {
+    to: string;
+    name: string;
+    role: AssignableTeamRole;
+    inviteUrl: string;
+  },
+): Promise<InvitationEmailDeliveryResult> {
+  try {
+    await sendTeamInvitationEmail(input);
+
+    const emailSentAt = new Date().toISOString();
+
+    const { error } = await supabaseAdmin
+      .from("team_invitations")
+      .update({
+        email_sent_at: emailSentAt,
+        email_error: null,
+      })
+      .eq("id", invitationId);
+
+    if (error) {
+      console.error("Could not save invitation email status:", error);
+    }
+
+    return {
+      emailSent: true,
+      emailSentAt,
+      emailError: null,
+    };
+  } catch (error) {
+    console.error(
+      `Could not send team invitation email to ${input.to}:`,
+      error,
+    );
+
+    const emailError =
+      "No se pudo enviar el correo. La invitación sigue creada; puedes compartir el enlace manualmente o renovar el enlace para reintentar.";
+
+    const { error: updateError } = await supabaseAdmin
+      .from("team_invitations")
+      .update({
+        email_sent_at: null,
+        email_error: emailError,
+      })
+      .eq("id", invitationId);
+
+    if (updateError) {
+      console.error("Could not save invitation email error:", updateError);
+    }
+
+    return {
+      emailSent: false,
+      emailSentAt: null,
+      emailError,
+    };
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -110,15 +202,15 @@ teamRouter.get("/", async (req: Request, res: Response) => {
       .from("restaurant_members")
       .select(
         `
-            id,
-            restaurant_id,
-            user_id,
-            role,
-            is_active,
-            last_seen_at,
-            created_at,
-            updated_at
-          `,
+          id,
+          restaurant_id,
+          user_id,
+          role,
+          is_active,
+          last_seen_at,
+          created_at,
+          updated_at
+        `,
       )
       .eq("restaurant_id", restaurantId)
       .order("created_at", { ascending: true });
@@ -166,31 +258,11 @@ teamRouter.get("/", async (req: Request, res: Response) => {
   }
 });
 
-async function getAuthenticatedUserId(req: Request): Promise<string> {
-  const authorization = req.headers.authorization;
-
-  const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
-
-  if (!token) {
-    throw new Error("No se encontró el token de autenticación.");
-  }
-
-  const { data, error } = await supabaseAdmin.auth.getUser(token);
-
-  if (error || !data.user) {
-    throw new Error("No se pudo identificar al usuario autenticado.");
-  }
-
-  return data.user.id;
-}
-
 // ─────────────────────────────────────────────
-// POST /api/v1/team/invitations
-// Crear miembro o generar enlace de invitación
-// ─────────────────────────────────────────────
-
 // GET /api/v1/team/invitations
-// Listar invitaciones del restaurante autenticado.
+// Listar invitaciones del restaurante
+// ─────────────────────────────────────────────
+
 teamRouter.get("/invitations", async (req: Request, res: Response) => {
   if (!requirePermission(req, res, "team.view")) return;
 
@@ -208,7 +280,10 @@ teamRouter.get("/invitations", async (req: Request, res: Response) => {
 
     const { error: expireError } = await supabaseAdmin
       .from("team_invitations")
-      .update({ status: "expired", updated_at: now })
+      .update({
+        status: "expired",
+        updated_at: now,
+      })
       .eq("restaurant_id", restaurantId)
       .eq("status", "pending")
       .lte("expires_at", now);
@@ -218,14 +293,17 @@ teamRouter.get("/invitations", async (req: Request, res: Response) => {
     const { data, error } = await supabaseAdmin
       .from("team_invitations")
       .select(
-        "id, restaurant_id, email, full_name, phone, role, status, expires_at, accepted_at, accepted_user_id, created_at, updated_at",
+        "id, restaurant_id, email, full_name, phone, role, status, expires_at, accepted_at, accepted_user_id, created_at, updated_at, email_sent_at, email_error",
       )
       .eq("restaurant_id", restaurantId)
       .order("created_at", { ascending: false });
 
     if (error) throw error;
 
-    return res.json({ success: true, data: data ?? [] });
+    return res.json({
+      success: true,
+      data: data ?? [],
+    });
   } catch (error) {
     console.error("GET /team/invitations failed:", error);
 
@@ -236,8 +314,11 @@ teamRouter.get("/invitations", async (req: Request, res: Response) => {
   }
 });
 
+// ─────────────────────────────────────────────
 // POST /api/v1/team/invitations
-// Crear una invitación persistente.
+// Crear miembro o generar invitación
+// ─────────────────────────────────────────────
+
 teamRouter.post(
   "/invitations",
   async (
@@ -287,9 +368,7 @@ teamRouter.post(
       });
     }
 
-    const baseUrl = process.env.FOOD360_ADMIN_URL;
-
-    if (!baseUrl) {
+    if (!process.env.FOOD360_ADMIN_URL) {
       return res.status(500).json({
         success: false,
         error: "Falta configurar FOOD360_ADMIN_URL en el backend.",
@@ -300,7 +379,7 @@ teamRouter.post(
       const invitedBy = await getAuthenticatedUserId(req);
       const now = new Date().toISOString();
 
-      // Evitar generar varias invitaciones simultáneas para el mismo correo.
+      // Evitar invitaciones pendientes duplicadas para el mismo correo.
       const { data: pending, error: pendingError } = await supabaseAdmin
         .from("team_invitations")
         .select("id")
@@ -320,8 +399,7 @@ teamRouter.post(
         });
       }
 
-      // Si ya existe una cuenta de Food360, se puede añadir al restaurante
-      // sin crear una segunda cuenta de autenticación.
+      // Si la cuenta ya existe, añadimos la membresía sin crear otra cuenta.
       const { data: existingProfile, error: profileError } = await supabaseAdmin
         .from("profiles")
         .select("id, email, full_name")
@@ -374,6 +452,9 @@ teamRouter.post(
               inviteUrl: null,
               expiresAt: null,
               status: "accepted",
+              emailSent: false,
+              emailSentAt: null,
+              emailError: null,
             },
           });
         }
@@ -403,19 +484,21 @@ teamRouter.post(
             inviteUrl: null,
             expiresAt: null,
             status: "accepted",
+            emailSent: false,
+            emailSentAt: null,
+            emailError: null,
           },
         });
       }
 
-      // Cuenta nueva: crear un token aleatorio y guardar solamente su hash.
+      // Cuenta nueva: generar token y guardar solamente su hash.
       const token = createInvitationToken();
       const tokenHash = hashInvitationToken(token);
+      const inviteUrl = getInvitationUrl(token);
 
       const expiresAt = new Date(
         Date.now() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
       ).toISOString();
-
-      const inviteUrl = getInvitationUrl(token);
 
       const { data: invitation, error: insertError } = await supabaseAdmin
         .from("team_invitations")
@@ -435,6 +518,15 @@ teamRouter.post(
 
       if (insertError) throw insertError;
 
+      // Enviar después de guardar la invitación.
+      // Un fallo SMTP no elimina el registro ni invalida el enlace.
+      const emailDelivery = await deliverInvitationEmail(invitation.id, {
+        to: email,
+        name,
+        role,
+        inviteUrl,
+      });
+
       return res.status(201).json({
         success: true,
         data: {
@@ -447,6 +539,7 @@ teamRouter.post(
           inviteUrl,
           expiresAt: invitation.expires_at,
           status: invitation.status,
+          ...emailDelivery,
         },
       });
     } catch (error) {
@@ -460,8 +553,11 @@ teamRouter.post(
   },
 );
 
+// ─────────────────────────────────────────────
 // POST /api/v1/team/invitations/:id/link
-// Generar un enlace nuevo e invalidar el anterior.
+// Renovar enlace y enviar correo nuevamente
+// ─────────────────────────────────────────────
+
 teamRouter.post(
   "/invitations/:id/link",
   async (req: Request<{ id: string }>, res: Response) => {
@@ -487,7 +583,7 @@ teamRouter.post(
     try {
       const { data: invitation, error: lookupError } = await supabaseAdmin
         .from("team_invitations")
-        .select("id, status")
+        .select("id, status, email, full_name, role")
         .eq("id", id)
         .eq("restaurant_id", restaurantId)
         .maybeSingle();
@@ -508,8 +604,16 @@ teamRouter.post(
         });
       }
 
+      if (!isAssignableRole(invitation.role)) {
+        return res.status(409).json({
+          success: false,
+          error: "El rol almacenado en la invitación no es válido.",
+        });
+      }
+
       const token = createInvitationToken();
       const tokenHash = hashInvitationToken(token);
+      const inviteUrl = getInvitationUrl(token);
 
       const expiresAt = new Date(
         Date.now() + INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
@@ -522,6 +626,8 @@ teamRouter.post(
           expires_at: expiresAt,
           status: "pending",
           updated_at: new Date().toISOString(),
+          email_sent_at: null,
+          email_error: null,
         })
         .eq("id", id)
         .eq("restaurant_id", restaurantId)
@@ -538,12 +644,20 @@ teamRouter.post(
         });
       }
 
+      const emailDelivery = await deliverInvitationEmail(data.id, {
+        to: invitation.email,
+        name: invitation.full_name,
+        role: invitation.role,
+        inviteUrl,
+      });
+
       return res.json({
         success: true,
         data: {
           invitationId: data.id,
-          inviteUrl: getInvitationUrl(token),
+          inviteUrl,
           expiresAt: data.expires_at,
+          ...emailDelivery,
         },
       });
     } catch (error) {
@@ -557,7 +671,11 @@ teamRouter.post(
   },
 );
 
+// ─────────────────────────────────────────────
 // POST /api/v1/team/invitations/:id/revoke
+// Revocar invitación
+// ─────────────────────────────────────────────
+
 teamRouter.post(
   "/invitations/:id/revoke",
   async (req: Request<{ id: string }>, res: Response) => {
@@ -621,7 +739,6 @@ teamRouter.patch(
     req: Request<{ id: string }, unknown, UpdateTeamMemberStatusBody>,
     res: Response,
   ) => {
-    // Según las reglas actuales, solo el owner puede hacerlo.
     if (req.userRole !== "owner") {
       return res.status(403).json({
         success: false,

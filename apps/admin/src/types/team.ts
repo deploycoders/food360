@@ -93,6 +93,9 @@ export interface TeamInvitationResult {
   inviteUrl: string | null;
   expiresAt: string | null;
   status: "pending" | "accepted";
+  emailSent?: boolean;
+  emailSentAt?: string | null;
+  emailError?: string | null;
 }
 
 // ─────────────────────────────────────────────
@@ -119,6 +122,8 @@ export interface TeamInvitation {
   accepted_user_id: string | null;
   created_at: string;
   updated_at: string;
+  email_sent_at?: string | null;
+  email_error?: string | null;
 }
 
 // ─────────────────────────────────────────────
@@ -129,6 +134,9 @@ export interface RenewTeamInvitationResult {
   invitationId: string;
   inviteUrl: string;
   expiresAt: string;
+  emailSent?: boolean;
+  emailSentAt?: string | null;
+  emailError?: string | null;
 }
 
 // ─────────────────────────────────────────────

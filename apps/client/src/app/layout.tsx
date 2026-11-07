@@ -17,9 +17,9 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "360 food | Menú digital",
+  title: "Food360 | Todo tu restaurante, conectado",
   description:
-    "Menú digital de 360 food: descubre platos, arma tu pedido y disfruta.",
+    "Gestiona pedidos, menú digital, cocina, inventario y equipo desde una sola plataforma diseñada para restaurantes.",
 };
 
 export const viewport: Viewport = {
@@ -38,21 +38,8 @@ export default function RootLayout({
       className={`${playfair.variable} ${jakarta.variable}`}
       suppressHydrationWarning
     >
-      <body className="flex min-h-dvh w-full justify-center bg-stone-100 font-sans antialiased text-stone-900 transition-colors duration-300 dark:bg-zinc-950 dark:text-zinc-100">
-        <Providers>
-          <div
-            className="
-              relative flex min-h-dvh w-full max-w-180
-              flex-col overflow-hidden bg-white shadow-none
-              transition-colors duration-300 dark:bg-zinc-950
-              lg:my-4 lg:min-h-[calc(100dvh-2rem)]
-              lg:rounded-[30px]
-              lg:shadow-[0_25px_90px_rgba(0,0,0,0.16)]
-            "
-          >
-            {children}
-          </div>
-        </Providers>
+      <body className="min-h-dvh w-full bg-stone-100 font-sans antialiased text-stone-900 transition-colors duration-300 dark:bg-zinc-950 dark:text-zinc-100">
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

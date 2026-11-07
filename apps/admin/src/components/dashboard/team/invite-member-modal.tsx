@@ -86,11 +86,15 @@ export function InviteMemberModal({
 
       setResult(invitation);
 
-      toast.success(
-        invitation.accountAlreadyExists
-          ? "Miembro añadido al restaurante."
-          : "Invitación preparada correctamente.",
-      );
+      if (invitation.accountAlreadyExists) {
+        toast.success("Miembro añadido al restaurante.");
+      } else if (invitation.emailSent) {
+        toast.success("Invitación enviada correctamente por correo.");
+      } else {
+        toast.warning(
+          "La invitación fue creada, pero no se pudo enviar el correo. Puedes compartir el enlace manualmente.",
+        );
+      }
     } catch (err) {
       const message =
         err instanceof Error
@@ -171,13 +175,17 @@ export function InviteMemberModal({
                 <p className="text-sm font-semibold text-foreground">
                   {result.accountAlreadyExists
                     ? "Miembro añadido"
-                    : "Enlace generado correctamente"}
+                    : result.emailSent
+                      ? "Invitación enviada"
+                      : "Invitación creada"}
                 </p>
 
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
                   {result.accountAlreadyExists
                     ? "La cuenta existente se ha añadido al restaurante. Puede acceder con sus credenciales habituales."
-                    : `Comparte el enlace con ${result.name} para que pueda continuar con la activación de su cuenta.`}
+                    : result.emailSent
+                      ? `Se envió un correo a ${result.email} con el enlace para activar su cuenta.`
+                      : "La invitación se creó, pero el correo no pudo enviarse. Puedes copiar y compartir el enlace manualmente."}
                 </p>
               </div>
             </div>
@@ -225,7 +233,8 @@ export function InviteMemberModal({
                     Comparte este enlace únicamente con la persona invitada.
                     {result.expiresAt && (
                       <>
-                        {" "}Caduca el{" "}
+                        {" "}
+                        Caduca el{" "}
                         {new Date(result.expiresAt).toLocaleString("es-VE", {
                           dateStyle: "medium",
                           timeStyle: "short",
