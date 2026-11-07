@@ -1121,8 +1121,10 @@ export default function CartPage() {
       </motion.main>
 
       {/* Formulario del comensal */}
+      {/* Formulario del comensal */}
       <CustomerForm
         isOpen={showCustomerModal}
+        onClose={() => setShowCustomerModal(false)}
         onSubmit={(data) => {
           setCustomerData(data);
           setShowCustomerModal(false);
