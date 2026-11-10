@@ -1,83 +1,112 @@
-import Link from "next/link";
-import { ScrollReveal } from "./scroll-reveal";
+"use client";
 
-const modules = [
-  "Pedidos y comandas",
-  "Menú digital",
-  "Cocina en tiempo real",
-  "Inventario",
-  "Gestión de equipo",
-];
+import { useEffect, useRef } from "react";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { gsap } from "gsap";
+
+import { HeroJourney } from "./hero/hero-journey";
 
 export function HeroSection() {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (
+      !section ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+
+    const context = gsap.context(() => {
+      const timeline = gsap.timeline({ defaults: { ease: "power3.out" } });
+
+      timeline
+        .fromTo(
+          "[data-hero-eyebrow]",
+          { autoAlpha: 0, y: 15 },
+          { autoAlpha: 1, y: 0, duration: 0.55 },
+        )
+        .fromTo(
+          "[data-hero-title]",
+          { autoAlpha: 0, y: 30, filter: "blur(7px)" },
+          { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.85 },
+          "-=0.2",
+        )
+        .fromTo(
+          "[data-hero-description]",
+          { autoAlpha: 0, y: 18 },
+          { autoAlpha: 1, y: 0, duration: 0.6 },
+          "-=0.35",
+        )
+        .fromTo(
+          "[data-hero-actions]",
+          { autoAlpha: 0, y: 14 },
+          { autoAlpha: 1, y: 0, duration: 0.55 },
+          "-=0.25",
+        );
+    }, section);
+
+    return () => context.revert();
+  }, []);
+
   return (
-    <ScrollReveal className="w-full" stagger={0.12}>
-      <section className="px-5 pb-12 pt-19 sm:px-8 sm:pb-16 sm:pt-24 lg:px-14 lg:pt-28">
-        <div className="mx-auto max-w-287.5 text-center">
+    <section
+      ref={sectionRef}
+      className="relative overflow-x-clip bg-(--color-bg-base) px-5 py-14 sm:px-8 sm:py-16 lg:px-12 lg:py-20 xl:px-16"
+    >
+      <div className="mx-auto w-full max-w-330">
+        <header className="mx-auto mb-10 max-w-212.5 text-center sm:mb-12">
           <p
-            data-reveal-item
-            className="mb-7 text-[11px] font-bold uppercase tracking-[0.19em] text-[#C56542]"
+            data-hero-eyebrow
+            className="text-[10px] font-bold uppercase tracking-[0.19em] text-(--color-accent-terracotta) sm:text-[11px]"
           >
-            Tecnología para la industria gastronómica
+            La operación de tu restaurante, conectada de principio a fin
           </p>
 
           <h1
-            data-reveal-item
-            className="mx-auto max-w-275 text-[clamp(2.8rem,6.5vw,5.9rem)] font-bold leading-[1.03] tracking-[-0.075em] text-[#20201E]"
+            data-hero-title
+            className="mt-5 text-[clamp(2.7rem,5.4vw,5rem)] font-bold leading-[1.04] tracking-[-0.065em] text-(--color-text-primary)"
           >
-            La operación de tu restaurante,
-            <span className="block text-[#E66F43]">en un solo lugar.</span>
+            El recorrido de{" "}
+            <span className="font-serif font-medium italic tracking-[-0.045em] text-(--color-accent-terracotta)">
+              un pedido.
+            </span>
           </h1>
 
           <p
-            data-reveal-item
-            className="mx-auto mt-6 max-w-175 text-[15px] leading-[1.8] text-[#77716A] sm:text-[17px]"
+            data-hero-description
+            className="mx-auto mt-5 max-w-155 text-sm leading-[1.85] text-(--color-text-muted) sm:text-base"
           >
-            Administra pedidos, menú digital, cocina, inventario y equipo desde
-            una plataforma diseñada para que cada parte de tu restaurante
-            trabaje en sincronía.
+            Food360 conecta la experiencia del comensal con el trabajo de tu
+            equipo, desde la carta digital hasta la entrega del pedido.
           </p>
+        </header>
 
-          <div
-            data-reveal-item
-            className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
-          >
-            <Link
-              href="/demo"
-              className="group inline-flex h-12.5 w-full items-center justify-center gap-3 rounded-md bg-[#E66F43] px-7 text-[13px] font-semibold text-white transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-[#D65F35] hover:shadow-[0_7px_18px_rgba(214,95,53,0.20)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E66F43] focus-visible:ring-offset-2 sm:w-auto"
-            >
-              Explorar la plataforma
-              <span className="inline-block transition-transform duration-200 group-hover:translate-x-1">
-                →
-              </span>
-            </Link>
-
-            <a
-              href="#producto"
-              className="inline-flex h-12.5 w-full items-center justify-center rounded-md border border-[#DCD6CC] bg-transparent px-7 text-[13px] font-semibold text-[#38342F] transition-[background-color,border-color,transform] duration-200 hover:border-[#BBB1A4] hover:bg-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E66F43] focus-visible:ring-offset-2 sm:w-auto"
-            >
-              Conocer la plataforma
-            </a>
-          </div>
-
-          <div
-            data-reveal-item
-            className="mx-auto mt-12 flex max-w-262.5 flex-wrap items-center justify-center gap-x-5 gap-y-3 border-t border-[#E8E3DB] pt-5 sm:gap-x-8"
-          >
-            {modules.map((module, index) => (
-              <div key={module} className="flex items-center gap-5 sm:gap-8">
-                <span className="whitespace-nowrap text-[10px] font-semibold tracking-[0.025em] text-[#77716A] sm:text-[11px]">
-                  {module}
-                </span>
-
-                {index !== modules.length - 1 && (
-                  <span className="h-1 w-1 shrink-0 rounded-full bg-[#C9BDB0]" />
-                )}
-              </div>
-            ))}
-          </div>
+        <div className="mx-auto w-full max-w-295">
+          <HeroJourney />
         </div>
-      </section>
-    </ScrollReveal>
+
+        <div
+          data-hero-actions
+          className="mt-8 flex items-center justify-center gap-3 flex-row"
+        >
+          <Link
+            href="/demo"
+            className="group inline-flex h-11 items-center justify-center gap-3 rounded-md bg-(--color-accent-terracotta) px-4 sm:px-6 text-[11px] sm:text-[12px] font-semibold text-white transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-(--color-accent-terracotta-hover) hover:shadow-[0_8px_22px_-12px_var(--color-accent-terracotta)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-terracotta) focus-visible:ring-offset-2"
+          >
+            Explorar Food360
+            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+          </Link>
+
+          <a
+            href="#producto"
+            className="inline-flex h-11 items-center justify-center rounded-md border border-(--color-border) bg-(--color-bg-surface) px-4 sm:px-6 text-[11px] sm:text-[12px] font-semibold text-(--color-text-primary) transition-colors duration-200 hover:border-(--color-accent-terracotta) hover:text-(--color-accent-terracotta) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent-terracotta) focus-visible:ring-offset-2"
+          >
+            Conocer la plataforma
+          </a>
+        </div>
+      </div>
+    </section>
   );
 }
