@@ -13,11 +13,7 @@ interface ModelViewerElement extends HTMLElement {
     y: number;
     z: number;
   };
-  updateFraming(): void;
 }
-
-// Dimensión máxima del modelo: 18 cm.
-const TARGET_MAX_DIMENSION = 0.18;
 
 export default function Product3DViewer({
   modelUrl,
@@ -39,77 +35,64 @@ export default function Product3DViewer({
 
         if (!isMounted || !containerRef.current) return;
 
-        viewer = document.createElement("model-viewer") as ModelViewerElement;
+        const modelViewer = document.createElement(
+          "model-viewer",
+        ) as ModelViewerElement;
 
-        viewer.setAttribute("src", modelUrl);
-        viewer.setAttribute("alt", `Modelo 3D de ${productName}`);
+        viewer = modelViewer;
 
-        // Visualización 3D.
-        viewer.setAttribute("camera-controls", "");
-        viewer.setAttribute("auto-rotate", "");
-        viewer.setAttribute("rotation-per-second", "20deg");
-        viewer.setAttribute("interaction-prompt", "auto");
+        // Modelo
+        modelViewer.setAttribute("src", modelUrl);
+        modelViewer.setAttribute("alt", `Modelo 3D de ${productName}`);
 
-        // Apariencia.
-        viewer.setAttribute("shadow-intensity", "1");
-        viewer.setAttribute("exposure", "1");
-        viewer.setAttribute("loading", "eager");
+        // Visualización 3D
+        modelViewer.setAttribute("camera-controls", "");
+        modelViewer.setAttribute("auto-rotate", "");
+        modelViewer.setAttribute("rotation-per-second", "20deg");
+        modelViewer.setAttribute("interaction-prompt", "auto");
 
-        // Transformación inicial.
-        viewer.setAttribute("scale", "1 1 1");
+        // Apariencia
+        modelViewer.setAttribute("shadow-intensity", "1");
+        modelViewer.setAttribute("exposure", "1");
+        modelViewer.setAttribute("loading", "eager");
 
-        // Realidad aumentada.
-        viewer.setAttribute("ar", "");
-        viewer.setAttribute("ar-modes", "webxr scene-viewer quick-look");
-        viewer.setAttribute("ar-scale", "fixed");
-        viewer.setAttribute("ar-placement", "floor");
+        // Realidad aumentada
+        modelViewer.setAttribute("ar", "");
+        modelViewer.setAttribute("ar-modes", "webxr scene-viewer quick-look");
 
-        // Ajustar automáticamente las dimensiones del GLB.
-        viewer.addEventListener(
+        // Mantener la escala original y bloquear el redimensionamiento.
+        modelViewer.setAttribute("ar-scale", "fixed");
+
+        // Permitir colocación sobre superficies horizontales.
+        modelViewer.setAttribute("ar-placement", "floor");
+
+        // Carga del modelo
+        modelViewer.addEventListener(
           "load",
           () => {
-            if (!isMounted || !viewer) return;
+            if (!isMounted) return;
 
             try {
-              const dimensions = viewer.getDimensions();
+              const dimensions = modelViewer.getDimensions();
 
-              const largestDimension = Math.max(
-                dimensions.x,
-                dimensions.y,
-                dimensions.z,
-              );
-
-              if (Number.isFinite(largestDimension) && largestDimension > 0) {
-                const scaleFactor = TARGET_MAX_DIMENSION / largestDimension;
-
-                // Escala uniforme: mantiene las proporciones.
-                viewer.setAttribute(
-                  "scale",
-                  `${scaleFactor} ${scaleFactor} ${scaleFactor}`,
-                );
-
-                // Actualizar el encuadre después de escalar.
-                viewer.updateFraming();
-
-                console.log("[Food360 3D] Dimensiones originales:", {
-                  x: dimensions.x,
-                  y: dimensions.y,
-                  z: dimensions.z,
-                });
-
-                console.log("[Food360 3D] Factor de escala:", scaleFactor);
-              }
-
-              setStatus("ready");
+              console.log("[Food360 3D] Dimensiones originales del GLB:", {
+                x: `${(dimensions.x * 100).toFixed(1)} cm`,
+                y: `${(dimensions.y * 100).toFixed(1)} cm`,
+                z: `${(dimensions.z * 100).toFixed(1)} cm`,
+              });
             } catch (error) {
-              console.error("[Food360 3D] Error ajustando escala:", error);
-              setStatus("ready");
+              console.warn(
+                "[Food360 3D] No se pudieron consultar las dimensiones:",
+                error,
+              );
             }
+
+            setStatus("ready");
           },
           { once: true },
         );
 
-        viewer.addEventListener(
+        modelViewer.addEventListener(
           "error",
           () => {
             if (isMounted) setStatus("error");
@@ -117,6 +100,7 @@ export default function Product3DViewer({
           { once: true },
         );
 
+        // Botón de realidad aumentada
         const arButton = document.createElement("button");
 
         arButton.setAttribute("slot", "ar-button");
@@ -137,20 +121,21 @@ export default function Product3DViewer({
           fontWeight: "600",
           backdropFilter: "blur(12px)",
           cursor: "pointer",
+          whiteSpace: "nowrap",
         });
 
-        viewer.appendChild(arButton);
+        modelViewer.appendChild(arButton);
 
-        Object.assign(viewer.style, {
+        Object.assign(modelViewer.style, {
           display: "block",
           width: "100%",
           height: "100%",
           background: "transparent",
         });
 
-        containerRef.current.replaceChildren(viewer);
+        containerRef.current.replaceChildren(modelViewer);
       } catch (error) {
-        console.error("[Food360 3D] Error cargando visor:", error);
+        console.error("[Food360 3D] Error cargando el visor:", error);
 
         if (isMounted) setStatus("error");
       }
