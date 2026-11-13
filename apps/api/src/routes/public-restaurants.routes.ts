@@ -188,18 +188,20 @@ publicRestaurantsRouter.get("/:slug/menu", async (req, res) => {
       .from("products")
       .select(
         `
-        id,
-        category_id,
-        name,
-        description,
-        price,
-        image_url,
-        is_out_of_stock,
-        category:categories!inner (
-          id,
-          is_active
-        )
-      `,
+    id,
+    category_id,
+    name,
+    description,
+    price,
+    image_url,
+    is_out_of_stock,
+    model_3d_enabled,
+    model_3d_url,
+    category:categories!inner (
+      id,
+      is_active
+    )
+  `,
       )
       .eq("restaurant_id", restaurantId)
       .eq("is_active", true)
@@ -232,15 +234,23 @@ publicRestaurantsRouter.get("/:slug/menu", async (req, res) => {
           sortOrder: category.sort_order,
         })),
 
-        products: (products ?? []).map((product) => ({
-          id: product.id,
-          categoryId: product.category_id,
-          name: product.name,
-          description: product.description ?? "",
-          price: Number(product.price),
-          image: product.image_url ?? "",
-          available: !product.is_out_of_stock,
-        })),
+        products: (products ?? []).map((product) => {
+          const has3DModel = Boolean(
+            product.model_3d_enabled && product.model_3d_url,
+          );
+
+          return {
+            id: product.id,
+            categoryId: product.category_id,
+            name: product.name,
+            description: product.description ?? "",
+            price: Number(product.price),
+            image: product.image_url ?? "",
+            available: !product.is_out_of_stock,
+            model3DEnabled: has3DModel,
+            model3DUrl: has3DModel ? product.model_3d_url : null,
+          };
+        }),
       },
     });
   } catch (error) {

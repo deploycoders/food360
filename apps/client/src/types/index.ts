@@ -21,6 +21,8 @@ export interface MenuItem {
   available: boolean;
   isPopular?: boolean;
   tags?: string[];
+  model3DEnabled?: boolean;
+  model3DUrl?: string | null;
 }
 
 export interface CategoryInfo {

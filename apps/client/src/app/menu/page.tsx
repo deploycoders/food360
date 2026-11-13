@@ -144,6 +144,8 @@ export default function MenuPage({
             image: product.image || "/food-placeholder.svg",
             available: product.available,
             isPopular: false,
+            model3DEnabled: product.model3DEnabled,
+            model3DUrl: product.model3DUrl,
           }));
 
           setCategories(nextCategories);
@@ -192,6 +194,8 @@ export default function MenuPage({
           image: product.image || "/food-placeholder.svg",
           available: product.available,
           isPopular: false,
+          model3DEnabled: product.model3DEnabled,
+          model3DUrl: product.model3DUrl,
         }));
 
         setCategories(nextCategories);

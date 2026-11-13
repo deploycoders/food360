@@ -2,11 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-
+import { Box, Image as ImageIcon } from "lucide-react";
+import Product3DViewer from "@/components/menu/product-3d-viewer";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-
 import { Check, Minus, Plus, ShoppingBag, X } from "lucide-react";
-
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { MenuItem } from "@/types";
 
@@ -51,6 +50,10 @@ function ItemDetailContent({
   const currentCartQuantity = getItemQuantity(item.id);
   const hasItemInCart = currentCartQuantity > 0;
   const isAvailable = item.available;
+
+  const [show3D, setShow3D] = useState(false);
+
+  const has3DModel = Boolean(item.model3DEnabled && item.model3DUrl?.trim());
 
   const [quantity, setQuantity] = useState(() =>
     Math.min(MAX_QUANTITY, Math.max(1, currentCartQuantity || 1)),
@@ -205,25 +208,55 @@ function ItemDetailContent({
         <div className="absolute left-1/2 top-2.5 z-20 h-1 w-10 -translate-x-1/2 rounded-full bg-white/70 sm:hidden" />
 
         {/* Imagen principal */}
+        {/* Imagen principal / Modelo 3D */}
         <div className="group/image relative h-52 w-full shrink-0 overflow-hidden bg-(--color-bg-subtle) sm:h-64">
-          <Image
-            src={item.image || "/food-placeholder.svg"}
-            alt={item.name}
-            fill
-            priority
-            sizes="(max-width: 640px) 100vw, 576px"
-            className="object-cover"
-          />
+          {show3D && has3DModel ? (
+            <Product3DViewer
+              modelUrl={item.model3DUrl!}
+              productName={item.name}
+            />
+          ) : (
+            <>
+              <Image
+                src={item.image || "/food-placeholder.svg"}
+                alt={item.name}
+                fill
+                priority
+                sizes="(max-width: 640px) 100vw, 576px"
+                className="object-cover"
+              />
 
-          {/* Degradado para integrar la imagen */}
-          <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/45 via-transparent to-black/10" />
+              <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/45 via-transparent to-black/10" />
 
-          {/* Indicador de producto */}
-          <div className="absolute bottom-4 left-5">
-            <span className="rounded-full border border-white/20 bg-black/30 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md">
-              Detalle del producto
-            </span>
-          </div>
+              <div className="absolute bottom-4 left-5">
+                <span className="rounded-full border border-white/20 bg-black/30 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md">
+                  Detalle del producto
+                </span>
+              </div>
+            </>
+          )}
+
+          {/* Alternar fotografía / modelo 3D */}
+          {has3DModel && (
+            <motion.button
+              type="button"
+              whileTap={tapAnimation}
+              onClick={() => setShow3D((previous) => !previous)}
+              className="absolute bottom-4 right-4 z-10 flex items-center gap-2 rounded-full border border-white/25 bg-black/50 px-3.5 py-2.5 text-[10px] font-semibold text-white shadow-sm backdrop-blur-md transition-colors hover:bg-black/70"
+            >
+              {show3D ? (
+                <>
+                  <ImageIcon size={14} />
+                  Ver fotografía
+                </>
+              ) : (
+                <>
+                  <Box size={14} />
+                  Ver en 3D
+                </>
+              )}
+            </motion.button>
+          )}
 
           {/* Cerrar */}
           <motion.button
@@ -232,14 +265,14 @@ function ItemDetailContent({
             whileTap={tapAnimation}
             onClick={onClose}
             aria-label="Cerrar"
-            className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white shadow-sm backdrop-blur-md transition-colors hover:bg-black/55 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            className="absolute right-4 top-4 z-10 flex size-10 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white shadow-sm backdrop-blur-md transition-colors hover:bg-black/55 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
             <X size={19} strokeWidth={1.8} />
           </motion.button>
 
           {/* Agotado */}
           {!isAvailable && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
               <span className="rounded-full border border-white/20 bg-black/60 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-md">
                 Producto agotado
               </span>

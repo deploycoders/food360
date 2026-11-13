@@ -12,6 +12,8 @@ export interface PublicMenuProduct {
   price: number;
   image: string;
   available: boolean;
+  model3DEnabled: boolean;
+  model3DUrl: string | null;
 }
 
 export interface PublicMenu {
@@ -76,7 +78,9 @@ function isPublicMenuResponse(
       typeof product.price === "number" &&
       Number.isFinite(product.price) &&
       typeof product.image === "string" &&
-      typeof product.available === "boolean",
+      typeof product.available === "boolean" &&
+      typeof product.model3DEnabled === "boolean" &&
+      (typeof product.model3DUrl === "string" || product.model3DUrl === null),
   );
 
   return validCategories && validProducts;
