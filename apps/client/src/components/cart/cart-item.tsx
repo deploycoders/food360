@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { CartItem as CartItemType } from '@/types';
-import { formatCurrency } from '@/lib/formatters';
-import { useCart } from '@/context/CartContext';
+import type { CartItem as CartItemType } from "@/types";
+import { formatCurrency } from "@/lib/formatters";
+import { useCart } from "@/context/CartContext";
 
 interface CartItemProps {
   item: CartItemType;
@@ -10,64 +10,80 @@ interface CartItemProps {
 
 export default function CartItemCard({ item }: CartItemProps) {
   const { updateQuantity, removeItem } = useCart();
+
   const subtotal = item.menuItem.price * item.quantity;
 
   return (
-    <div className="flex gap-4 glass-panel rounded-2xl p-4
-      transition-all duration-300 hover:bg-[var(--color-surface-hover)] animate-fade-in-up items-center">
-      {/* Emoji */}
-      <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]
-        flex items-center justify-center text-2xl">
+    <article className="glass-panel animate-fade-in-up flex items-center gap-4 rounded-2xl p-4 transition-colors duration-300 hover:bg-(--color-surface-hover)">
+      {/* Product image / emoji */}
+      <div
+        aria-hidden="true"
+        className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-(--color-border) bg-(--color-surface) text-2xl"
+      >
         {item.menuItem.emoji}
       </div>
 
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="text-[var(--color-text-main)] font-semibold text-sm leading-tight truncate">
+      {/* Product information */}
+      <div className="min-w-0 flex-1">
+        <div className="mb-2 flex items-start justify-between gap-2">
+          <h3
+            title={item.menuItem.name}
+            className="truncate text-sm font-semibold leading-tight text-(--color-text-main)"
+          >
             {item.menuItem.name}
           </h3>
+
+          {/* Remove product */}
           <button
+            type="button"
             onClick={() => removeItem(item.menuItem.id)}
-            className="flex-shrink-0 w-6 h-6 rounded-lg bg-[var(--color-danger-light)] border border-[var(--color-danger)]/30
-              flex items-center justify-center text-[var(--color-danger)] text-xs
-              hover:bg-[var(--color-danger)] hover:text-white transition-all cursor-pointer"
-            aria-label="Eliminar"
+            aria-label={`Eliminar ${item.menuItem.name} del carrito`}
+            className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-(--color-danger)/30 bg-(--color-danger-light) text-xs text-(--color-danger) transition-colors hover:bg-(--color-danger) hover:text-white"
           >
             ✕
           </button>
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           {/* Quantity controls */}
           <div className="flex items-center gap-1.5">
             <button
-              onClick={() => updateQuantity(item.menuItem.id, item.quantity - 1)}
-              className="w-7 h-7 rounded-lg bg-[var(--color-surface-hover)] border border-[var(--color-border)]
-                flex items-center justify-center text-[var(--color-text-muted)] text-sm font-bold
-                hover:bg-[var(--color-surface)] hover:text-[var(--color-text-main)] transition-all active:scale-90 cursor-pointer"
+              type="button"
+              onClick={() =>
+                updateQuantity(item.menuItem.id, item.quantity - 1)
+              }
+              aria-label={`Disminuir cantidad de ${item.menuItem.name}`}
+              className="flex size-7 cursor-pointer items-center justify-center rounded-lg border border-(--color-border) bg-(--color-surface-hover) text-sm font-bold text-(--color-text-muted) transition-colors hover:bg-(--color-surface) hover:text-(--color-text-main) active:scale-90"
             >
               −
             </button>
-            <span className="w-6 text-center text-[var(--color-text-main)] font-semibold text-sm">
+
+            <span
+              aria-live="polite"
+              aria-atomic="true"
+              className="w-6 text-center text-sm font-semibold tabular-nums text-(--color-text-main)"
+            >
               {item.quantity}
             </span>
+
             <button
-              onClick={() => updateQuantity(item.menuItem.id, item.quantity + 1)}
-              className="w-7 h-7 rounded-lg bg-[var(--color-surface-hover)] border border-[var(--color-border)]
-                flex items-center justify-center text-[var(--color-text-muted)] text-sm font-bold
-                hover:bg-[var(--color-surface)] hover:text-[var(--color-text-main)] transition-all active:scale-90 cursor-pointer"
+              type="button"
+              onClick={() =>
+                updateQuantity(item.menuItem.id, item.quantity + 1)
+              }
+              aria-label={`Aumentar cantidad de ${item.menuItem.name}`}
+              className="flex size-7 cursor-pointer items-center justify-center rounded-lg border border-(--color-border) bg-(--color-surface-hover) text-sm font-bold text-(--color-text-muted) transition-colors hover:bg-(--color-surface) hover:text-(--color-text-main) active:scale-90"
             >
               +
             </button>
           </div>
 
           {/* Subtotal */}
-          <span className="text-[var(--color-primary)] font-bold text-sm">
+          <span className="shrink-0 text-sm font-bold tabular-nums text-(--color-primary)">
             {formatCurrency(subtotal)}
           </span>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

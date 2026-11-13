@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { formatCurrency, formatOriginLabel } from '@/lib/formatters';
-import type { OrderOrigin } from '@/types';
+import { formatCurrency, formatOriginLabel } from "@/lib/formatters";
+import type { OrderOrigin } from "@/types";
 
 interface OrderSummaryProps {
   totalPrice: number;
@@ -12,49 +12,68 @@ interface OrderSummaryProps {
   isSubmitting: boolean;
 }
 
-export default function OrderSummary({ 
-  totalPrice, 
-  totalItems, 
+export default function OrderSummary({
+  totalPrice,
+  totalItems,
   origin,
   tableNumber,
-  onSubmit, 
-  isSubmitting 
+  onSubmit,
+  isSubmitting,
 }: OrderSummaryProps) {
-  const originLabel = formatOriginLabel(origin, tableNumber) ?? 'Origen pendiente';
+  const originLabel =
+    formatOriginLabel(origin, tableNumber) ?? "Origen pendiente";
 
   return (
-    <div className="glass-card rounded-3xl p-6 shadow-xl animate-fade-in-up">
-      <h3 className="text-[var(--color-text-main)] font-bold text-base mb-4">Resumen de la Cuenta</h3>
+    <div className="glass-card animate-fade-in-up rounded-3xl p-6 shadow-xl">
+      {/* Header */}
+      <h3 className="mb-4 text-base font-bold text-(--color-text-main)">
+        Resumen de la Cuenta
+      </h3>
 
-      {/* Origin info badge */}
-      <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[var(--color-surface)] 
-        border border-[var(--color-border)] mb-5">
-        <span className="text-xs font-semibold text-[var(--color-accent)]">{originLabel}</span>
+      {/* Order origin */}
+      <div className="mb-5 flex items-center gap-2 rounded-xl border border-(--color-border) bg-(--color-surface) px-3.5 py-2.5">
+        <span className="text-xs font-semibold text-(--color-accent)">
+          {originLabel}
+        </span>
       </div>
 
-      {/* Totals */}
-      <div className="space-y-3 mb-6">
+      {/* Order totals */}
+      <div className="mb-6 space-y-3">
         <div className="flex justify-between text-sm">
-          <span className="text-[var(--color-text-muted)]">Items ({totalItems})</span>
-          <span className="font-medium text-[var(--color-text-main)]">{formatCurrency(totalPrice)}</span>
+          <span className="text-(--color-text-muted)">
+            Items ({totalItems})
+          </span>
+
+          <span className="font-medium tabular-nums text-(--color-text-main)">
+            {formatCurrency(totalPrice)}
+          </span>
         </div>
+
         <div className="flex justify-between text-sm">
-          <span className="text-[var(--color-text-muted)]">Subtotal</span>
-          <span className="font-medium text-[var(--color-text-main)]">{formatCurrency(totalPrice)}</span>
+          <span className="text-(--color-text-muted)">Subtotal</span>
+
+          <span className="font-medium tabular-nums text-(--color-text-main)">
+            {formatCurrency(totalPrice)}
+          </span>
         </div>
-        <div className="border-t border-[var(--color-border)] pt-3 flex justify-between">
-          <span className="font-bold text-[var(--color-text-main)]">Total</span>
-          <span className="font-bold text-lg text-[var(--color-text-main)]">{formatCurrency(totalPrice)}</span>
+
+        <div className="flex justify-between border-t border-(--color-border) pt-3">
+          <span className="font-bold text-(--color-text-main)">Total</span>
+
+          <span className="text-lg font-bold tabular-nums text-(--color-text-main)">
+            {formatCurrency(totalPrice)}
+          </span>
         </div>
       </div>
 
+      {/* Submit order */}
       <button
+        type="button"
         onClick={onSubmit}
         disabled={isSubmitting || totalItems === 0}
-        className="w-full py-3.5 rounded-2xl bg-[var(--color-accent)] text-white font-bold text-sm
-          hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
+        className="w-full cursor-pointer rounded-2xl bg-(--color-accent) py-3.5 text-sm font-bold text-white transition-[opacity,transform] hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {isSubmitting ? 'Enviando...' : 'Enviar Pedido'}
+        {isSubmitting ? "Enviando..." : "Enviar Pedido"}
       </button>
     </div>
   );

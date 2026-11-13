@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { type MouseEvent } from 'react';
-import Image from 'next/image';
-import { MenuItem } from '@/types';
-import { formatCurrency } from '@/lib/formatters';
-import { useCart } from '@/context/CartContext';
+import type { MouseEvent } from "react";
+import Image from "next/image";
+import type { MenuItem } from "@/types";
+import { formatCurrency } from "@/lib/formatters";
+import { useCart } from "@/context/CartContext";
 
 interface MenuItemRowProps {
   item: MenuItem;
@@ -15,62 +15,80 @@ export default function MenuItemRow({ item, onSelectItem }: MenuItemRowProps) {
   const { addItem, getItemQuantity } = useCart();
   const quantity = getItemQuantity(item.id);
 
-  const handleQuickAdd = (e: MouseEvent) => {
+  const handleQuickAdd = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     addItem(item);
   };
 
   return (
-    <div
-      onClick={() => onSelectItem(item)}
-      className="group py-5 px-4 bg-white border-b border-[var(--color-border-subtle)] hover:bg-neutral-50/70 transition-colors cursor-pointer flex gap-4 items-start"
-    >
-      {/* Left Info Column */}
-      <div className="flex-1 min-w-0 pr-1">
-        <h4 className="font-brand-serif text-base sm:text-lg font-bold uppercase tracking-tight text-[var(--color-text-title)] leading-tight group-hover:text-emerald-950 transition-colors">
+    <article className="group flex cursor-pointer items-start gap-4 border-b border-(--color-border-subtle) bg-white px-4 py-5 transition-colors hover:bg-neutral-50/70">
+      {/* Product information */}
+      <button
+        type="button"
+        onClick={() => onSelectItem(item)}
+        className="min-w-0 flex-1 cursor-pointer pr-1 text-left"
+      >
+        <h4 className="font-brand-serif text-base leading-tight font-bold tracking-tight text-(--color-text-title) uppercase transition-colors group-hover:text-emerald-950 sm:text-lg">
           {item.name}
         </h4>
 
-        <p className="text-sm font-bold text-[var(--color-text-title)] mt-1 mb-1.5">
+        <p className="mt-1 mb-1.5 text-sm font-bold text-(--color-text-title)">
           {formatCurrency(item.price)}
         </p>
 
         {item.tags && item.tags.length > 0 && (
-          <p className="text-[11px] font-semibold text-[#8a5d1b] mb-1">
-            {item.tags.join(' · ')}
+          <p className="mb-1 text-[11px] font-semibold text-[#8a5d1b]">
+            {item.tags.join(" · ")}
           </p>
         )}
 
-        <p className="text-xs text-[var(--color-text-muted)] leading-relaxed line-clamp-3">
+        <p className="line-clamp-3 text-xs leading-relaxed text-(--color-text-muted)">
           {item.description}
         </p>
-      </div>
+      </button>
 
-      {/* Right Image Column with Quick Add Button */}
-      <div className="relative flex-shrink-0 w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-neutral-100 border border-[var(--color-border)] shadow-2xs">
-        <Image
-          src={item.image}
-          alt={item.name}
-          fill
-          sizes="140px"
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-
-        {/* Quick Add Button / Arrow Icon Button in Corner */}
+      {/* Product image and quick add */}
+      <div className="relative size-28 shrink-0 overflow-hidden rounded-2xl border border-(--color-border) bg-neutral-100 shadow-2xs sm:size-32">
         <button
+          type="button"
+          onClick={() => onSelectItem(item)}
+          aria-label={`Ver detalles de ${item.name}`}
+          className="absolute inset-0 size-full cursor-pointer"
+        >
+          <Image
+            src={item.image}
+            alt={item.name}
+            fill
+            sizes="(max-width: 640px) 112px, 128px"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        </button>
+
+        <button
+          type="button"
           onClick={handleQuickAdd}
-          aria-label={`Agregar ${item.name}`}
-          className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-[var(--color-btn-add)] hover:bg-[var(--color-btn-add-hover)] text-white flex items-center justify-center shadow-lg transition-transform active:scale-90 cursor-pointer"
+          aria-label={`Agregar ${item.name} al carrito`}
+          className="absolute right-2 bottom-2 z-10 flex size-8 cursor-pointer items-center justify-center rounded-full bg-(--color-btn-add) text-white shadow-lg transition-all hover:bg-(--color-btn-add-hover) active:scale-90"
         >
           {quantity > 0 ? (
             <span className="text-xs font-bold">{quantity}</span>
           ) : (
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            <svg
+              className="size-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4v16m8-8H4"
+              />
             </svg>
           )}
         </button>
       </div>
-    </div>
+    </article>
   );
 }
